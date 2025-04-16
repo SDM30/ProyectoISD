@@ -65,4 +65,5 @@ public class Facultad {
                 ", puertoServidorCentral=" + puertoServidorCentral +
                 '}';
     }
+
 }

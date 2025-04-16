@@ -14,69 +14,69 @@ import java.util.List;
 public class RepositorioPrograma {
     private static final String ubicacionDefecto = "src/main/resources/programasDefecto.txt";
 
-    public static void inicializarCliente(Facultad facultad, List<Solicitud> solicitudes) {
-        File archivo = new File (ubicacionDefecto);
-
-        facultad = new Facultad ();
-        solicitudes = new ArrayList<Solicitud> ();
+    public static void inicializarCliente(ContenedorDatos contenedor, String ubicacionArchivo) {
+        File archivo;
+        if (ubicacionArchivo != null) {
+            archivo = new File(ubicacionArchivo);
+        } else {
+            archivo = new File(ubicacionDefecto);
+        }
 
         if (!archivo.exists()) {
-            System.err.println ("Error: el archivo no existe");
+            System.err.println("Error: el archivo no existe");
             return;
         }
 
-        try (BufferedReader reader = new BufferedReader (new FileReader (archivo))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(archivo))) {
             String linea;
 
-            System.out.println ("Leyendo archivo " + ubicacionDefecto);
-            System.out.println ("------------------------------------");
+            System.out.println("Leyendo archivo " + ubicacionDefecto);
+            System.out.println("------------------------------------");
+
+            // Reiniciamos los datos
+            contenedor.facultad = new Facultad();
+            contenedor.solicitudes.clear();
 
             try {
-                //Crear facultades, programas y solicitudes
-                String nombreFacultad;
-                linea = reader.readLine ();
-
-                if (linea != null) {
-                    nombreFacultad = linea;
-                } else {
-                    throw new IllegalArgumentException ("Formato Invalido: No hay un nombre para la facultad en el archivo");
+                String nombreFacultad = reader.readLine();
+                if (nombreFacultad == null || nombreFacultad.isEmpty()) {
+                    throw new IllegalArgumentException("Formato Inválido: Falta nombre de facultad");
                 }
 
-                //Crear facultad
-                facultad.setNombre(nombreFacultad);
+                contenedor.facultad.setNombre(nombreFacultad);
 
                 for (int i = 0; i < 5; i++) {
-                    linea = reader.readLine ();
-                    if (linea.isEmpty()) {
-                        throw new IllegalArgumentException ("Formato Invalido: No hay registros para 5 programas academicos");
+                    linea = reader.readLine();
+                    if (linea == null || linea.isEmpty()) {
+                        throw new IllegalArgumentException("Formato Inválido: Faltan programas académicos");
                     }
 
-                    String[] partes = linea.split (",");
-
+                    String[] partes = linea.split(",");
                     if (partes.length != 3) {
-                        throw new IllegalArgumentException ("Formato Invalido: la solicitud del programa no es valida");
+                        throw new IllegalArgumentException("Formato Inválido en línea: " + linea);
                     }
 
                     String nombrePrograma = partes[0].trim();
-                    int solicitudNumSalon = Integer.parseInt(partes[1].trim());
-                    int solicitudNumLab = Integer.parseInt(partes[2].trim());
+                    int numSalon = Integer.parseInt(partes[1].trim());
+                    int numLab = Integer.parseInt(partes[2].trim());
 
-                    //Crear programa y agregarlo a la facultad
-                    facultad.getProgramas().add(new Programa(nombrePrograma));
-
-                    //Crear solicitudes
-                    solicitudes.add(new Solicitud (nombreFacultad, nombrePrograma, solicitudNumSalon, solicitudNumLab));
+                    contenedor.facultad.getProgramas().add(new Programa(nombrePrograma));
+                    contenedor.solicitudes.add(new Solicitud(
+                            nombreFacultad,
+                            nombrePrograma,
+                            numSalon,
+                            numLab
+                    ));
                 }
 
             } catch (Exception e) {
-                System.err.printf (e.getMessage ());
+                System.err.println("Error: " + e.getMessage());
+                // Reiniciamos en caso de error
+                contenedor.facultad = null;
+                contenedor.solicitudes.clear();
             }
         } catch (IOException e) {
-            System.err.println("Error leyendo el archivo: " + e.getMessage());
+            System.err.println("Error leyendo archivo: " + e.getMessage());
         }
-
-        // Imprimir informacion de facultad
-        System.out.println (facultad.toString());
-        System.out.println (solicitudes.toString ());
     }
 }
