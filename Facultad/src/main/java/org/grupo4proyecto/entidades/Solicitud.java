@@ -44,4 +44,14 @@ public class Solicitud {
     public void setNumLaboratorios (int numLaboratorios) {
         this.numLaboratorios = numLaboratorios;
     }
+
+    @Override
+    public String toString () {
+        return "Solicitud{" +
+                "facultad='" + facultad + '\'' +
+                ", programa='" + programa + '\'' +
+                ", numSalones=" + numSalones +
+                ", numLaboratorios=" + numLaboratorios +
+                '}';
+    }
 }

@@ -1,6 +1,7 @@
 package org.grupo4proyecto.entidades;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Facultad {
@@ -14,6 +15,13 @@ public class Facultad {
         this.programas = programas;
         this.dirServidorCentral = dirServidorCentral;
         this.puertoServidorCentral = puertoServidorCentral;
+    }
+
+    public Facultad () {
+        this.nombre = null;
+        this.programas = new ArrayList<Programa> ();
+        this.dirServidorCentral = null;
+        puertoServidorCentral = 0;
     }
 
     public String getNombre () {
@@ -46,5 +54,15 @@ public class Facultad {
 
     public void setPuertoServidorCentral (int puertoServidorCentral) {
         this.puertoServidorCentral = puertoServidorCentral;
+    }
+
+    @Override
+    public String toString () {
+        return "Facultad{" +
+                "nombre='" + nombre + '\'' +
+                ", programas=" + programas +
+                ", dirServidorCentral=" + dirServidorCentral +
+                ", puertoServidorCentral=" + puertoServidorCentral +
+                '}';
     }
 }
