@@ -52,18 +52,20 @@ public class RepositorioPrograma {
                     }
 
                     String[] partes = linea.split(",");
-                    if (partes.length != 3) {
+                    if (partes.length != 4) {
                         throw new IllegalArgumentException("Formato Inválido en línea: " + linea);
                     }
 
                     String nombrePrograma = partes[0].trim();
                     int numSalon = Integer.parseInt(partes[1].trim());
                     int numLab = Integer.parseInt(partes[2].trim());
+                    int semestre = Integer.parseInt(partes[3].trim());
 
                     contenedor.facultad.getProgramas().add(new Programa(nombrePrograma));
                     contenedor.solicitudes.add(new Solicitud(
                             nombreFacultad,
                             nombrePrograma,
+                            semestre,
                             numSalon,
                             numLab
                     ));

@@ -3,12 +3,14 @@ package org.grupo4proyecto.entidades;
 public class Solicitud {
     private String facultad;
     private String programa;
+    private int semestre;
     private int numSalones;
     private int numLaboratorios;
 
-    public Solicitud (String facultad, String programa, int numSalones, int numLaboratorios) {
+    public Solicitud (String facultad, String programa, int semestre, int numSalones, int numLaboratorios) {
         this.facultad = facultad;
         this.programa = programa;
+        this.semestre = semestre;
         this.numSalones = numSalones;
         this.numLaboratorios = numLaboratorios;
     }
@@ -27,6 +29,14 @@ public class Solicitud {
 
     public void setPrograma (String programa) {
         this.programa = programa;
+    }
+
+    public int getSemestre () {
+        return semestre;
+    }
+
+    public void setSemestre (int semestre) {
+        this.semestre = semestre;
     }
 
     public int getNumSalones () {
@@ -50,6 +60,7 @@ public class Solicitud {
         return "Solicitud{" +
                 "facultad='" + facultad + '\'' +
                 ", programa='" + programa + '\'' +
+                ", semestre=" + semestre +
                 ", numSalones=" + numSalones +
                 ", numLaboratorios=" + numLaboratorios +
                 '}';

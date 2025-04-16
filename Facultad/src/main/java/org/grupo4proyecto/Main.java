@@ -3,13 +3,18 @@ package org.grupo4proyecto;
 
 import org.grupo4proyecto.entidades.Facultad;
 import org.grupo4proyecto.entidades.Solicitud;
+import org.grupo4proyecto.redes.ClienteFacultad;
 import org.grupo4proyecto.repositorio.ContenedorDatos;
 import org.grupo4proyecto.repositorio.RepositorioPrograma;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class Main {
@@ -22,6 +27,12 @@ public class Main {
 
             System.out.println (facultad.toString());
             System.out.println (solicitudes.toString());
+
+            try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
+                for (Solicitud sol : datos.solicitudes) {
+                    clienteFacultad.enviarSolicitudServidor(sol);
+                }
+            }
         }
     }
 
@@ -54,6 +65,7 @@ public class Main {
 
         } else if (args.length == 0) {
             RepositorioPrograma.inicializarCliente(datos, null);
+            cargarConfiguracionServidor(datos.facultad);
             return true;
         }
         return false;
@@ -79,6 +91,40 @@ public class Main {
         } catch (UnknownHostException e) {
             System.err.println("Error: Formato de IP inválido");
             return false;
+        }
+    }
+
+    public static void cargarConfiguracionServidor(Facultad facultad) {
+        Properties prop = new Properties();
+        try (InputStream input = new FileInputStream("src/main/resources/configCliente.properties")) {
+
+            // Cargar archivo de propiedades
+            prop.load(input);
+
+            // Obtener y validar dirección IP
+            String ip = prop.getProperty("server.ip", "localhost");
+            try {
+                InetAddress direccion = InetAddress.getByName(ip);
+                facultad.setDirServidorCentral(direccion);
+            } catch (UnknownHostException e) {
+                System.err.println("Dirección IP inválida en configuración, usando localhost");
+                facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
+            }
+
+            // Obtener y validar puerto
+            String puerto = prop.getProperty("server.port", "8080");
+            try {
+                facultad.setPuertoServidorCentral(Integer.parseInt(puerto));
+            } catch (NumberFormatException e) {
+                System.err.println("Puerto inválido en configuración, usando 8080");
+                facultad.setPuertoServidorCentral(8080);
+            }
+
+        } catch (IOException e) {
+            System.err.println("No se encontró configCliente.properties, usando valores por defecto");
+            // Valores por defecto
+            facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
+            facultad.setPuertoServidorCentral(8080);
         }
     }
 
