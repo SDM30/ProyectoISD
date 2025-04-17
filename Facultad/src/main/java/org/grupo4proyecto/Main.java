@@ -4,6 +4,7 @@ package org.grupo4proyecto;
 import org.grupo4proyecto.entidades.Facultad;
 import org.grupo4proyecto.entidades.Solicitud;
 import org.grupo4proyecto.redes.ClienteFacultad;
+import org.grupo4proyecto.redes.ResultadoEnvio;
 import org.grupo4proyecto.repositorio.ContenedorDatos;
 import org.grupo4proyecto.repositorio.RepositorioPrograma;
 
@@ -24,15 +25,15 @@ public class Main {
         if (interpreteArgumentos (args, datos)) {
             Facultad facultad = datos.facultad;
             List<Solicitud> solicitudes = datos.solicitudes;
+            ResultadoEnvio res = null;
 
             System.out.println (facultad.toString());
             System.out.println (solicitudes.toString());
 
 
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
-                for (Solicitud sol : datos.solicitudes) {
-                    clienteFacultad.enviarSolicitudServidor(sol);
-                }
+                   res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
+                   System.out.println(res);
             }
         }
     }

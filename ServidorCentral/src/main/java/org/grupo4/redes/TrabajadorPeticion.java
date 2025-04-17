@@ -1,50 +1,79 @@
 package org.grupo4.redes;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.grupo4.entidades.AdministradorInstalaciones;
 import org.grupo4.entidades.ResultadoAsignacion;
 import org.grupo4.entidades.Solicitud;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
+
+import java.util.Arrays;
 
 public class TrabajadorPeticion extends Thread{
     private final ZContext contexto;
     private final ZMQ.Socket trabajador;
+    private final ObjectMapper json = new ObjectMapper();
 
     public TrabajadorPeticion(ZContext contexto) {
         this.contexto = contexto;
         this.trabajador = contexto.createSocket(SocketType.REQ);
         trabajador.connect("inproc://backend");
+        trabajador.setReceiveTimeOut(1000); // Timeout de 1 segundo
     }
 
 
     @Override
     public void run() {
-        //Notificar al backend que esta preparado
-        trabajador.send("LISTO");
+        // 1) Indicar al broker que estoy listo
+        trabajador.send("READY");
+        System.out.println("[TRABAJADOR] Enviado READY al broker");
 
-        while(!Thread.currentThread().isInterrupted()) {
-            // Recibir todas las partes del mensaje
-            String semestre = trabajador.recvStr();
-            String nombreFacultad = trabajador.recvStr();
-            String programa = trabajador.recvStr();
-            String numSalonesStr = trabajador.recvStr();
-            String numLaboratoriosStr = trabajador.recvStr();
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                // 2) Recibir el mensaje multipart del broker:
+                // Formato: [workerAddr][empty][clientAddr][empty][request]
 
-            // Convertir los valores numéricos
-            int numSalones = Integer.parseInt(numSalonesStr);
-            int numLaboratorios = Integer.parseInt(numLaboratoriosStr);
-            int numSem = Integer.parseInt(semestre);
+                // --- Recepción de frames CON validación ---
+                byte[] workerAddr = trabajador.recv();
+                if (workerAddr == null) continue; // Timeout: reintentar
+                trabajador.recv(); // Frame vacío (ignorar)
 
-            Solicitud solicitud = new Solicitud(nombreFacultad, programa, numSem, numSalones, numLaboratorios);
+                byte[] clientAddr = trabajador.recv();
+                if (clientAddr == null) continue;
+                trabajador.recv(); // Frame vacío (ignorar)
 
-            ResultadoAsignacion resultado = AdministradorInstalaciones.getInstance().asignar(numSalones, numLaboratorios);
-            enviarResultado(resultado, solicitud);
+                byte[] reqBytes = trabajador.recv();
+                if (reqBytes == null) continue;
 
+                System.out.println("[TRABAJADOR] Solicitud recibida de cliente: " + Arrays.toString(clientAddr));
+
+                // 3) Procesar la solicitud
+                String reqJson = new String(reqBytes, ZMQ.CHARSET);
+                Solicitud peticion = json.readValue(reqJson, Solicitud.class);
+                String resJson = procesarSolicitud(peticion);
+
+                // 4) Enviar respuesta al broker:
+                // Formato: [clientAddr][empty][response]
+                trabajador.sendMore(clientAddr);
+                trabajador.sendMore("");
+                trabajador.send(resJson);
+
+                System.out.println("[TRABAJADOR] Respuesta enviada para cliente: " + Arrays.toString(clientAddr));
+
+            } catch (ZMQException e) {
+                if (e.getErrorCode() == ZMQ.Error.ETERM.getCode()) {
+                    break; // Contexto cerrado, terminar hilo
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void enviarResultado (ResultadoAsignacion resultado, Solicitud solicitud) {
+    public String obtenerInfoGeneral (ResultadoAsignacion resultado, Solicitud solicitud) {
         /*
          * Estructura Trama
          * Trama 1: Informacion general
@@ -63,9 +92,25 @@ public class TrabajadorPeticion extends Thread{
             }
         }
 
-        trabajador.sendMore(infoGeneral);
-        trabajador.sendMore(String.valueOf(resultado.labsAsignados()));
-        trabajador.sendMore(String.valueOf(resultado.aulaMovilAsignadas()));
-        trabajador.send(String.valueOf(resultado.salonesAsignados()));
+        return infoGeneral;
+    }
+
+    public String procesarSolicitud(Solicitud peticion) {
+        try {
+            ResultadoAsignacion resultado = AdministradorInstalaciones.getInstance().asignar(
+                    peticion.getNumSalones(),
+                    peticion.getNumLaboratorios());
+
+            ResultadoEnvio resEnvio = new ResultadoEnvio(
+                    obtenerInfoGeneral(resultado, peticion),
+                    resultado.labsAsignados(),
+                    resultado.aulaMovilAsignadas(),
+                    resultado.salonesAsignados());
+
+            return json.writeValueAsString(resEnvio);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
