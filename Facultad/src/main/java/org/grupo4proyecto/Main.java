@@ -28,6 +28,7 @@ public class Main {
             System.out.println (facultad.toString());
             System.out.println (solicitudes.toString());
 
+
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
                 for (Solicitud sol : datos.solicitudes) {
                     clienteFacultad.enviarSolicitudServidor(sol);
@@ -112,19 +113,19 @@ public class Main {
             }
 
             // Obtener y validar puerto
-            String puerto = prop.getProperty("server.port", "8080");
+            String puerto = prop.getProperty("server.port", "5555");
             try {
                 facultad.setPuertoServidorCentral(Integer.parseInt(puerto));
             } catch (NumberFormatException e) {
-                System.err.println("Puerto inválido en configuración, usando 8080");
-                facultad.setPuertoServidorCentral(8080);
+                System.err.println("Puerto inválido en configuración, usando 5555");
+                facultad.setPuertoServidorCentral(5555);
             }
 
         } catch (IOException e) {
             System.err.println("No se encontró configCliente.properties, usando valores por defecto");
             // Valores por defecto
             facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
-            facultad.setPuertoServidorCentral(8080);
+            facultad.setPuertoServidorCentral(5555);
         }
     }
 

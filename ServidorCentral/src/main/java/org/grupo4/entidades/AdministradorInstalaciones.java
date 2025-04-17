@@ -3,7 +3,10 @@ package org.grupo4.entidades;
 import org.grupo4.concurrencia.ContadorAtomico;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
+
+import static org.grupo4.repositorio.Configuracion.cargarConfiguracionServidor;
 
 public class AdministradorInstalaciones {
     private static volatile AdministradorInstalaciones singleton;
@@ -13,27 +16,10 @@ public class AdministradorInstalaciones {
 
     // Valores maximos parametrizables
     public AdministradorInstalaciones() {
-        // Valores por defecto
-        int maxSalones = 380;
-        int maxLabs = 60;
+        List<String> valores = cargarConfiguracionServidor();
 
-        // Cargar configuración desde archivo
-        try (InputStream input = getClass().getClassLoader()
-                .getResourceAsStream("src/main/resources/configServidor.properties")) {
-
-            Properties prop = new Properties();
-            prop.load(input);
-
-            maxSalones = Integer.parseInt(
-                    prop.getProperty("server.maxSalones", "380"));
-
-            maxLabs = Integer.parseInt(
-                    prop.getProperty("server.maxLabs", "60"));
-
-        } catch (Exception e) {
-            System.err.println("Error cargando configuración. Usando valores por defecto. Detalle: "
-                    + e.getMessage());
-        }
+        int maxSalones = Integer.parseInt(valores.get(0));
+        int maxLabs = Integer.parseInt(valores.get(1));
 
         this.salones = new ContadorAtomico(maxSalones);
         this.labs = new ContadorAtomico(maxLabs);

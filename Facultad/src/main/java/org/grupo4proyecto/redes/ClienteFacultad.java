@@ -8,22 +8,21 @@ import org.zeromq.ZMQ.Socket;
 import zmq.ZMQ;
 
 import java.net.InetAddress;
-import java.util.List;
 
 
 public class ClienteFacultad implements AutoCloseable {
-    private final ZContext context;
+    private final ZContext contexto;
     private final Socket cliente;
     private final Facultad facultad;
 
     public ClienteFacultad(Facultad facultad) {
-        this.context = new ZContext();
+        this.contexto = new ZContext();
         this.facultad = facultad;
 
         InetAddress dirServidor = facultad.getDirServidorCentral();
         int puertoServidor = facultad.getPuertoServidorCentral();
 
-        this.cliente = context.createSocket(SocketType.REQ);
+        this.cliente = contexto.createSocket(SocketType.REQ);
         cliente.setIdentity(facultad.getNombre().getBytes(ZMQ.CHARSET));
         cliente.connect("tcp://" + dirServidor.getHostAddress() + ":" + puertoServidor);
     }
@@ -43,9 +42,11 @@ public class ClienteFacultad implements AutoCloseable {
         cliente.sendMore(String.valueOf(solicitud.getNumSalones()));
         cliente.send(String.valueOf(solicitud.getNumLaboratorios()));
 
-        // Recibir confirmación (REQ/REP necesita este ciclo)
-        String respuesta = cliente.recvStr();
-        System.out.println("Confirmación del servidor: " + respuesta);
+        String infoGeneral = cliente.recvStr();
+        String labsAsignados = cliente.recvStr();
+        String aulasMoviles = cliente.recvStr();
+        String salonesAsignados = cliente.recvStr();
+        System.out.println("Respuesta del servidor: " + infoGeneral);
     }
 
     public void recibirRespuestaServidor() {
@@ -57,8 +58,8 @@ public class ClienteFacultad implements AutoCloseable {
 
     @Override
     public void close() {
-        if (context != null) {
-            context.close();
+        if (contexto != null) {
+            contexto.close();
         }
     }
 }
