@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 
-public class Main {
+public class MainFacultad {
     public static void main (String[] args) {
         ContenedorDatos datos = new ContenedorDatos();
 
