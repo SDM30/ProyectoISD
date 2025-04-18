@@ -1,9 +1,7 @@
 package org.grupo4proyecto.redes;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.grupo4proyecto.entidades.Facultad;
-import org.grupo4proyecto.entidades.ResultadoAsignacion;
 import org.grupo4proyecto.entidades.Solicitud;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -54,6 +52,30 @@ public class ClienteFacultad implements AutoCloseable {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public String confirmarAsignacion(Solicitud solicitud, ResultadoEnvio resultadoEnvio, boolean aceptado) {
+        try {
+            String mensaje;
+            if (aceptado) {
+                mensaje = "CONFIRMAR_ASIGNACION:" + solicitud.getPrograma();
+            } else {
+                mensaje = "RECHAZAR_ASIGNACION:" + solicitud.getPrograma();
+            }
+
+            ConfirmacionAsignacion ack = new ConfirmacionAsignacion(mensaje, resultadoEnvio);
+            String payload = json.writeValueAsString(ack);
+            cliente.send(payload);
+
+            System.out.println("[CLIENTE " + facultad.getNombre() + "] Enviando confirmación: " + payload);
+
+            return cliente.recvStr();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return "[CLIENTE] Error en la recepcion de la confirmacion";
     }
 
     @Override

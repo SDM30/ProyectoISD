@@ -13,15 +13,20 @@ public class Configuracion {
      *   server.ip = <valor>
      *   server.port = <valor>
      */
-    public static List<String> cargarConfiguracionServidor() {
+    public static List<String> cargarConfiguracionServidor(String rutaConfig) {
         // Valores por defecto
         int maxSalones = 380;
         int maxLabs = 60;
         String ip = "localhost";
         String port = "5555";
+        String inproc = "backend";
+
+        if(rutaConfig == null) {
+            rutaConfig = "configServidor.properties";
+        }
 
         try (InputStream input = Configuracion.class.getClassLoader()
-                .getResourceAsStream("configServidor.properties")) {
+                .getResourceAsStream(rutaConfig)) {
 
             Properties prop = new Properties();
             prop.load(input);
@@ -30,6 +35,7 @@ public class Configuracion {
             maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
             ip = prop.getProperty("server.ip", "localhost");
             port = prop.getProperty("server.port", "5555");
+            inproc = prop.getProperty("server.inproc","backend");
 
         } catch (Exception e) {
             System.err.println("Error cargando configuración. Usando valores por defecto. Detalle: "

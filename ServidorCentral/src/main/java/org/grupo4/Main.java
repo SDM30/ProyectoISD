@@ -1,6 +1,11 @@
 package org.grupo4;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.grupo4.entidades.AdministradorInstalaciones;
+import org.grupo4.entidades.Solicitud;
+import org.grupo4.redes.ConfirmacionAsignacion;
+import org.grupo4.redes.ResultadoEnvio;
 import org.grupo4.redes.TrabajadorPeticion;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -32,11 +37,11 @@ public class Main {
             Queue<String> workerQueue = new LinkedList<>();
 
             while (!Thread.currentThread().isInterrupted()) {
-                ZMQ.Poller poller = context.createPoller(2);
-                poller.register(backend, ZMQ.Poller.POLLIN);
+                Poller poller = context.createPoller(2);
+                poller.register(backend, Poller.POLLIN);
 
                 if (!workerQueue.isEmpty()) {
-                    poller.register(frontend, ZMQ.Poller.POLLIN);
+                    poller.register(frontend, Poller.POLLIN);
                     System.out.println("[BROKER] Trabajadores disponibles: " + workerQueue.size());
                     System.out.println("[BROKER] Estado recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
                 }
@@ -73,18 +78,80 @@ public class Main {
                     String clientAddr = frontend.recvStr();
                     frontend.recv();
                     String request = frontend.recvStr();
-                    String workerAddr = workerQueue.poll();
 
-                    System.out.println("[BROKER] Recibida solicitud de " + clientAddr
-                            + " - Asignando a trabajador " + workerAddr);
+                    recepcionClienteFacultad(clientAddr, request, backend, frontend, workerQueue);
 
-                    backend.sendMore(workerAddr);
-                    backend.sendMore("");
-                    backend.sendMore(clientAddr);
-                    backend.sendMore("");
-                    backend.send(request);
                 }
             }
+        }
+    }
+
+
+    public static void recepcionClienteFacultad(String clientAddr, String requestJson,
+                                                Socket backend, Socket frontend,
+                                                Queue<String> workerQueue) {
+        try {
+
+            // Validar que el JSON no sea nulo o vacío
+            if (requestJson == null || requestJson.trim().isEmpty()) {
+                System.err.println("[BROKER] Error: Mensaje JSON vacío o nulo");
+                return;
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+
+            // 1. Primer intento: Deserializar como ConfirmacionAsignacion
+            try {
+                ConfirmacionAsignacion confirmacion = mapper.readValue(requestJson, ConfirmacionAsignacion.class);
+
+                boolean exito = false;
+                String respuesta = null;
+
+                switch(confirmacion.getEncabezado().split(":")[0]) {
+
+                    case "CONFIRMAR_ASIGNACION":
+                        System.out.println("[BROKER] Confirmación recibida de " + clientAddr);
+                        // Enviar respuesta simple
+                        respuesta = "CONFIRMADO ACEPTACION";
+                        break;
+
+                    case "RECHAZAR_ASIGNACION":
+                        System.out.println("[BROKER] Rechazo recibido de " + clientAddr);
+                        exito = AdministradorInstalaciones.getInstance().devolverRecursos(confirmacion.getResEnvio());
+                        // Enviar respuesta simple
+                        respuesta = "CONFIRMADO RECHAZO";
+                        break;
+                }
+
+                frontend.sendMore(clientAddr);
+                frontend.sendMore("");
+                frontend.send(respuesta);
+                return;
+
+            } catch (JsonProcessingException e) {
+                System.out.println("[DEBUG] No es mensaje de confirmación: " + e.getStackTrace());
+            }
+
+            // 2. Segundo intento: Deserializar como Solicitud
+            try {
+                Solicitud solicitud = mapper.readValue(requestJson, Solicitud.class);
+
+                // Lógica para otras solicitudes
+                String workerAddr = workerQueue.poll();
+                System.out.println("[BROKER] Solicitud genérica de " + clientAddr + " asignada a " + workerAddr);
+
+                backend.sendMore(workerAddr);
+                backend.sendMore("");
+                backend.sendMore(clientAddr);
+                backend.sendMore("");
+                backend.send(requestJson);
+                return;
+            } catch (JsonProcessingException e) {
+                System.out.println("[DEBUG] No es solicitud de recursos: " + e.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.err.println("[BROKER] Error crítico: " + e.getMessage());
         }
     }
 }

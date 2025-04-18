@@ -1,6 +1,7 @@
 package org.grupo4.entidades;
 
 import org.grupo4.concurrencia.ContadorAtomico;
+import org.grupo4.redes.ResultadoEnvio;
 
 import java.io.InputStream;
 import java.util.List;
@@ -16,7 +17,7 @@ public class AdministradorInstalaciones {
 
     // Valores maximos parametrizables
     public AdministradorInstalaciones() {
-        List<String> valores = cargarConfiguracionServidor();
+        List<String> valores = cargarConfiguracionServidor(null);
 
         int maxSalones = Integer.parseInt(valores.get(0));
         int maxLabs = Integer.parseInt(valores.get(1));
@@ -62,6 +63,34 @@ public class AdministradorInstalaciones {
             // Caso 3: No hay recursos suficientes
             return new ResultadoAsignacion(0, 0, 0);
         }
+    }
+
+    public boolean devolverRecursos(ResultadoEnvio asignacion) {
+        // 1. Calcular valores futuros
+        int labsFuturos = labs.get() + asignacion.getLabsAsignados();
+        int salonesFuturos = salones.get() + asignacion.getSalonesAsignados() + asignacion.getAulaMovilAsignadas();
+        int aulasMovilesFuturas = aulasMoviles.get() - asignacion.getAulaMovilAsignadas();
+
+        // 2. Validar integridad
+        boolean operacionValida =
+                labsFuturos >= 0 &&
+                        salonesFuturos >= 0 &&
+                        aulasMovilesFuturas >= 0 &&
+                        asignacion.getAulaMovilAsignadas() <= aulasMoviles.get();
+
+        if (!operacionValida) {
+            return false;
+        }
+
+        // 3. Aplicar cambios con incrementar/decrementar (sin usar set)
+        labs.incrementar(asignacion.getLabsAsignados());
+        salones.incrementar(asignacion.getSalonesAsignados() + asignacion.getAulaMovilAsignadas());
+
+        if (asignacion.getAulaMovilAsignadas() > 0) {
+            aulasMoviles.decrementar(asignacion.getAulaMovilAsignadas());
+        }
+
+        return true;
     }
 
     // Método para obtener estadísticas actuales

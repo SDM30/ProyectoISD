@@ -30,10 +30,28 @@ public class Main {
             System.out.println (facultad.toString());
             System.out.println (solicitudes.toString());
 
+            Scanner scanner = new Scanner(System.in);
+
 
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
-                   res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
-                   System.out.println(res);
+               res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
+
+               if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
+                   System.out.println(res.getInfoGeneral());
+                   return;
+               }
+
+                System.out.println("Aceptas la asignacion: " + res + "\n Ingresa: Si o No");
+                System.out.print(">> ");
+                String opcion = scanner.nextLine();
+
+                if (opcion.trim().equals("Si")) {
+                    clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, true);
+                } else if (opcion.trim().equals("No")) {
+                    clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, false);
+                } else {
+                    System.out.println("Ingrese una opcion valida");
+                }
             }
         }
     }
