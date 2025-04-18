@@ -1,6 +1,7 @@
 package org.grupo4.redes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.grupo4.entidades.AdministradorInstalaciones;
 import org.grupo4.entidades.ResultadoAsignacion;
@@ -13,69 +14,67 @@ import org.zeromq.ZMQException;
 import java.util.Arrays;
 
 public class TrabajadorPeticion extends Thread{
+    private final String id;
     private final ZContext contexto;
     private final ZMQ.Socket trabajador;
     private final ObjectMapper json = new ObjectMapper();
 
-    public TrabajadorPeticion(ZContext contexto) {
+    public TrabajadorPeticion(ZContext contexto, String id) {
+        this.id = id;
         this.contexto = contexto;
-        this.trabajador = contexto.createSocket(SocketType.REQ);
-        trabajador.connect("inproc://backend");
-        trabajador.setReceiveTimeOut(1000); // Timeout de 1 segundo
+        this.trabajador = contexto.createSocket(SocketType.DEALER);
+        this.trabajador.setIdentity(id.getBytes(ZMQ.CHARSET));
+        this.trabajador.connect("inproc://backend");
+        System.out.println("[TRABAJADOR " + id + "] Conectado al broker");
     }
 
 
     @Override
     public void run() {
         // 1) Indicar al broker que estoy listo
+        System.out.println("[TRABAJADOR " + id + "] Enviando señal READY");
+        trabajador.sendMore("");
         trabajador.send("READY");
-        System.out.println("[TRABAJADOR] Enviado READY al broker");
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 // 2) Recibir el mensaje multipart del broker:
-                // Formato: [workerAddr][empty][clientAddr][empty][request]
+                // Formato: [empty][clientAddr][empty][request]
+                trabajador.recv();
+                String dirCliente = trabajador.recvStr();
+                trabajador.recv();
+                String peticion = trabajador.recvStr();
 
-                // --- Recepción de frames CON validación ---
-                byte[] workerAddr = trabajador.recv();
-                if (workerAddr == null) continue; // Timeout: reintentar
-                trabajador.recv(); // Frame vacío (ignorar)
-
-                byte[] clientAddr = trabajador.recv();
-                if (clientAddr == null) continue;
-                trabajador.recv(); // Frame vacío (ignorar)
-
-                byte[] reqBytes = trabajador.recv();
-                if (reqBytes == null) continue;
-
-                System.out.println("[TRABAJADOR] Solicitud recibida de cliente: " + Arrays.toString(clientAddr));
+                System.out.println("[TRABAJADOR " + id + "] Procesando solicitud de "
+                        + dirCliente + ": " + peticion);
 
                 // 3) Procesar la solicitud
-                String reqJson = new String(reqBytes, ZMQ.CHARSET);
-                Solicitud peticion = json.readValue(reqJson, Solicitud.class);
-                String resJson = procesarSolicitud(peticion);
+                String reqJson = peticion;
+                Solicitud solicitud = json.readValue(reqJson, Solicitud.class);
+                String resJson = procesarSolicitud(solicitud);
+
+                System.out.println("[TRABAJADOR " + id + "] Enviando respuesta a " + dirCliente);
 
                 // 4) Enviar respuesta al broker:
-                // Formato: [clientAddr][empty][response]
-                trabajador.sendMore(clientAddr);
+                // Formato: [empty][clientAddr][empty][response]
+                trabajador.sendMore("");
+                trabajador.sendMore(dirCliente);
                 trabajador.sendMore("");
                 trabajador.send(resJson);
 
-                System.out.println("[TRABAJADOR] Respuesta enviada para cliente: " + Arrays.toString(clientAddr));
-
             } catch (ZMQException e) {
-                if (e.getErrorCode() == ZMQ.Error.ETERM.getCode()) {
-                    break; // Contexto cerrado, terminar hilo
+                if (e.getErrorCode() != ZMQ.Error.ETERM.getCode()) {
+                    System.out.println("[TRABAJADOR " + id + "] Error: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (JsonProcessingException e) {
+                System.out.println("[TRABAJADOR " + id + "] Error: " + e.getMessage());
             }
         }
     }
 
     public String obtenerInfoGeneral (ResultadoAsignacion resultado, Solicitud solicitud) {
         /*
-         * Estructura Trama
+         * Estructura Repuesta
          * Trama 1: Informacion general
          * Trama 2: Laboratorios asignados
          * Trama 3: Aulas moviles

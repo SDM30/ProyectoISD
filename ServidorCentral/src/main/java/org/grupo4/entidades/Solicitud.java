@@ -15,6 +15,8 @@ public class Solicitud {
         this.numLaboratorios = numLaboratorios;
     }
 
+    public Solicitud() {}
+
     public String getFacultad () {
         return facultad;
     }

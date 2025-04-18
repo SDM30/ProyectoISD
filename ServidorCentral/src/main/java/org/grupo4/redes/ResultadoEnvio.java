@@ -13,6 +13,8 @@ public class ResultadoEnvio {
         this.salonesAsignados = salonesAsignados;
     }
 
+    public ResultadoEnvio() {}
+
     public String getInfoGeneral() {
         return infoGeneral;
     }

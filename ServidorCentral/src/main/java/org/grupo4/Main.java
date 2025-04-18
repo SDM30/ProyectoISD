@@ -1,5 +1,6 @@
 package org.grupo4;
 
+import org.grupo4.entidades.AdministradorInstalaciones;
 import org.grupo4.redes.TrabajadorPeticion;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -11,74 +12,72 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
         try (ZContext context = new ZContext()) {
-            // 1. Sockets del broker
             Socket frontend = context.createSocket(SocketType.ROUTER);
             Socket backend = context.createSocket(SocketType.ROUTER);
-            frontend.bind("tcp://*:5555");     // Clientes se conectan aquí
-            backend.bind("inproc://backend");  // Trabajadores internos
+            frontend.bind("tcp://*:5555");
+            backend.bind("inproc://backend");
 
-            // 2. Iniciar trabajadores
-            int NBR_WORKERS = 1;
-            for (int i = 0; i < NBR_WORKERS; i++) {
-                new Thread(new TrabajadorPeticion(context)).start();
+            System.out.println("[BROKER] Iniciado en tcp://*:5556");
+            System.out.println("[BROKER] Lanzando trabajadores...");
+
+            for (int i = 1; i <= 5; i++) {
+                String workerId = String.valueOf(i);
+                new Thread(new TrabajadorPeticion(context, workerId)).start();
+                System.out.println("[BROKER] Trabajador " + workerId + " iniciado");
             }
 
-            // 3. Cola de trabajadores disponibles
-            Queue<byte[]> workerQueue = new LinkedList<>();
+            Queue<String> workerQueue = new LinkedList<>();
 
-            // 4. Bucle principal del broker
             while (!Thread.currentThread().isInterrupted()) {
-                Poller poller = context.createPoller(2);
-                poller.register(backend, Poller.POLLIN);  // Siempre escuchar backend
+                ZMQ.Poller poller = context.createPoller(2);
+                poller.register(backend, ZMQ.Poller.POLLIN);
 
-                // Escuchar frontend solo si hay trabajadores disponibles
                 if (!workerQueue.isEmpty()) {
-                    poller.register(frontend, Poller.POLLIN);
+                    poller.register(frontend, ZMQ.Poller.POLLIN);
+                    System.out.println("[BROKER] Trabajadores disponibles: " + workerQueue.size());
+                    System.out.println("[BROKER] Estado recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
                 }
 
-                poller.poll();
+                int events = poller.poll(1000);
+                if (events == 0) continue;
 
-                // 5. Manejar mensajes del backend (trabajadores)
+                // Manejar trabajadores
                 if (poller.pollin(0)) {
-                    // Formato: [workerAddr][empty][clientAddr][empty][response]
-                    byte[] workerAddr = backend.recv();
-                    backend.recv();    // Frame vacío
-                    byte[] clientAddr = backend.recv();
+                    String workerAddr = backend.recvStr();
+                    backend.recv();
+                    String command = backend.recvStr();
 
-
-                    if ("READY".equals(new String(clientAddr, ZMQ.CHARSET))) {
-                        // Registrar trabajador como disponible
+                    if ("READY".equals(command)) {
                         workerQueue.add(workerAddr);
-                        System.out.println("[BROKER] Trabajador registrado: ");
+                        System.out.println("[BROKER] Trabajador " + workerAddr + " marcado como listo");
                     } else {
-                        // Reenviar respuesta al cliente
-                        backend.recv();  // Frame vacío
-                        byte[] response = backend.recv();
+                        String clientAddr = command;
+                        backend.recv();
+                        String response = backend.recvStr();
+
+                        System.out.println("[BROKER] Reenviando respuesta a cliente " + clientAddr
+                                + " desde trabajador " + workerAddr);
 
                         frontend.sendMore(clientAddr);
                         frontend.sendMore("");
                         frontend.send(response);
-                        System.out.println("[BROKER] Respuesta enviada a cliente ");
+                        workerQueue.add(workerAddr);
                     }
                 }
 
-                // 6. Manejar mensajes del frontend (clientes)
+                // Manejar clientes
                 if (poller.pollin(1)) {
-                    // Formato: [clientAddr][empty][request]
-                    byte[] clientAddr = frontend.recv();
-                    frontend.recv(); // Frame vacío
-                    byte[] request = frontend.recv();
+                    String clientAddr = frontend.recvStr();
+                    frontend.recv();
+                    String request = frontend.recvStr();
+                    String workerAddr = workerQueue.poll();
 
-                    // Obtener trabajador disponible
-                    byte[] workerAddr = workerQueue.poll();
-                    System.out.println("[BROKER] Enviando solicitud a trabajador ");
+                    System.out.println("[BROKER] Recibida solicitud de " + clientAddr
+                            + " - Asignando a trabajador " + workerAddr);
 
-                    // Reenviar al trabajador: [workerAddr][empty][clientAddr][empty][request]
                     backend.sendMore(workerAddr);
                     backend.sendMore("");
                     backend.sendMore(clientAddr);

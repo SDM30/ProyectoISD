@@ -27,47 +27,33 @@ public class ClienteFacultad implements AutoCloseable {
         int puertoServidor = facultad.getPuertoServidorCentral();
 
         this.cliente = contexto.createSocket(SocketType.REQ);
-        cliente.setIdentity(facultad.getNombre().getBytes(ZMQ.CHARSET));
+
+        String idCliente = facultad.getNombre();
+        cliente.setIdentity(idCliente.getBytes(ZMQ.CHARSET));
+
+        System.out.println("[CLIENTE " + idCliente + "] Conectando a broker...");
         cliente.connect("tcp://localhost:5555");
-        //cliente.setReceiveTimeOut(5000);
     }
 
-    //Metodos para comunicarse con el programa (sincrono)
-    public void recibirSolicitudPrograma() {
-    }
-
-    public void enviarConfirmacionPrograma() {
-    }
-
-    //Metodos para comunicarse con el servidor central (asincrono)
+    //Metodos para comunicarse con el servidor central
     public ResultadoEnvio enviarSolicitudServidor(Solicitud solicitud) {
         try {
             String payload = json.writeValueAsString(solicitud);
-            System.out.println("[CLIENTE] Enviando solicitud: " + payload);
+            System.out.println("[CLIENTE " + facultad.getNombre() + "] Enviando solicitud: " + payload);
 
             cliente.send(payload);
             System.out.println("[CLIENTE] Solicitud enviada, esperando respuesta...");
 
-            byte[] respuestaBytes = cliente.recv();
-            if (respuestaBytes == null) {
-                System.out.println("[CLIENTE] Timeout: No se recibió respuesta.");
-                return null;
-            }
+            String respuesta = cliente.recvStr();
 
-            System.out.println("[CLIENTE] Respuesta recibida ");
+            System.out.println("[CLIENTE] Respuesta recibida: " + respuesta);
 
-            return json.readValue(respuestaBytes, ResultadoEnvio.class);
+            return json.readValue(respuesta, ResultadoEnvio.class);
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
-    }
-
-    public void recibirRespuestaServidor() {
-
-    }
-
-    public void enviarConfirmacionServidor() {
     }
 
     @Override
