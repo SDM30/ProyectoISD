@@ -19,10 +19,18 @@ import java.util.Properties;
 import java.util.Scanner;
 
 public class MainFacultad {
+
+    static int semestrePorDefecto = 1;
+
     public static void main (String[] args) {
         ContenedorDatos datos = new ContenedorDatos();
 
         if (interpreteArgumentos (args, datos)) {
+
+            if (datos.solicitudes.isEmpty()) {
+                cargarSolicitudesEmergencia(datos);
+            }
+
             Facultad facultad = datos.facultad;
             List<Solicitud> solicitudes = datos.solicitudes;
             ResultadoEnvio res = null;
@@ -57,40 +65,106 @@ public class MainFacultad {
     }
 
     public static boolean interpreteArgumentos(String[] args, ContenedorDatos datos) {
-        if (args.length >= 2) {
+        // Nuevo formato de argumentos:
+        // [0] Nombre facultad
+        // [1] IP servidor
+        // [2] Puerto
+        // [3] Semestre (opcional)
+        // [4] Archivo programas (opcional)
+
+        if (args.length >= 3) {
             try {
-                int puerto = Integer.parseInt(args[1]);
-                if (validarInfoServidor(args[0], puerto)) {
-                    InetAddress dirIP = InetAddress.getByName(args[0]);
-                    datos.facultad.setDirServidorCentral(dirIP);
-                    datos.facultad.setPuertoServidorCentral(puerto);
-                    RepositorioPrograma.inicializarCliente(datos, null);
+                datos.facultad.setNombre(args[0]);
+                datos.facultad.setDirServidorCentral(InetAddress.getByName(args[1]));
+                datos.facultad.setPuertoServidorCentral(Integer.parseInt(args[2]));
 
-                    if (args.length == 3) {
-                        RepositorioPrograma.inicializarCliente(datos, args[2]);
-                    }
-                    return true;
+                int semestre = args.length >= 4 ? Integer.parseInt(args[3]) : 1;
 
+                if (args.length >= 5) {
+                    RepositorioPrograma.inicializarCliente(datos, args[4], semestre);
                 } else {
-                    System.out.println ("El formato de los parametros es: <Direccion IPv4> <Puerto Servidor> <(OPCIONAL) archivo con programas>");
-                    System.out.println ("Si se deja vacio se carga la configuracion por defecto");
+                    cargarProgramasPorDefecto(datos, semestre);
                 }
+                return true;
 
-            } catch (NumberFormatException e) {
-                System.err.println("Error: Puerto debe ser numérico");
-            } catch (UnknownHostException e) {
-                System.err.println("Error: Dirección IP no válida");
+            } catch (Exception e) {
+                System.err.println("Error en argumentos: " + e.getMessage());
+                mostrarAyuda();
+                return false;
             }
-            return false;
-
         } else if (args.length == 0) {
-            RepositorioPrograma.inicializarCliente(datos, null);
+            // Valores por defecto
+            datos.facultad.setNombre("Facultad de Ingeniería");
             cargarConfiguracionServidor(datos.facultad);
+            cargarProgramasPorDefecto(datos, semestrePorDefecto);
             return true;
         }
+        mostrarAyuda();
         return false;
     }
 
+    /**
+     * Muestra las instrucciones de uso del programa
+     */
+    private static void mostrarAyuda() {
+        String ayuda = """
+        ==================================================================
+        SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
+        ==================================================================
+        
+        Modo de uso:
+        1. Sin parámetros (valores por defecto):
+           java -jar Facultad.jar
+           * Usará:
+             - Nombre facultad: 'Facultad de Ingeniería'
+             - IP servidor: localhost
+             - Puerto: 5555
+             - Semestre: 1
+             - Programas: programaDefecto.txt
+        
+        2. Con parámetros personalizados:
+           java -jar Facultad.jar <nombre> <ip> <puerto> [semestre] [archivo_programas]
+           
+           Ejemplo completo:
+           java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 2 misProgramas.txt
+        
+        3. Parámetros mínimos requeridos:
+           java -jar Facultad.jar <nombre> <ip> <puerto>
+           
+           Ejemplo:
+           java -jar Facultad.jar "Facultad de Medicina" 127.0.0.1 5556
+        
+        ==================================================================
+        ARCHIVOS DE CONFIGURACIÓN:
+        - configCliente.properties: Contiene IP/puerto por defecto
+        - programaDefecto.txt: Listado de programas con formato:
+          Nombre Programa,salones,laboratorios
+        ==================================================================
+        """;
+
+        System.out.println(ayuda);
+    }
+
+    private static void cargarProgramasPorDefecto(ContenedorDatos datos, int semestre) {
+        try (InputStream input = MainFacultad.class.getResourceAsStream("/programasDefecto.txt")) {
+            if (input == null) throw new IOException("Archivo no encontrado en recursos");
+            RepositorioPrograma.inicializarCliente(datos, input, semestre);
+        } catch (Exception e) {
+            System.err.println("Error cargando programas: " + e.getMessage());
+            cargarSolicitudesEmergencia(datos);
+        }
+    }
+
+    private static void cargarSolicitudesEmergencia(ContenedorDatos datos) {
+        datos.solicitudes.add(new Solicitud(
+                datos.facultad.getNombre(),
+                "Programa de Emergencia",
+                semestrePorDefecto,
+                5,
+                5
+        ));
+    }
+    
     public static boolean validarInfoServidor(String dirIP, int numeroPuerto) {
         try {
             // Validación de IP
@@ -115,9 +189,10 @@ public class MainFacultad {
     }
 
     public static void cargarConfiguracionServidor(Facultad facultad) {
-        Properties prop = new Properties();
+
         try (InputStream input = new FileInputStream("src/main/resources/configCliente.properties")) {
 
+            Properties prop = new Properties();
             // Cargar archivo de propiedades
             prop.load(input);
 
@@ -147,5 +222,4 @@ public class MainFacultad {
             facultad.setPuertoServidorCentral(5555);
         }
     }
-
 }
