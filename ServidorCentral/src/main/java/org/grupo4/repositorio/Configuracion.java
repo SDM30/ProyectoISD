@@ -17,12 +17,12 @@ public class Configuracion {
         // Valores por defecto
         int maxSalones = 380;
         int maxLabs = 60;
-        String ip = "localhost";
+        String ip = "0.0.0.0";
         String port = "5555";
         String inproc = "backend";
 
         if(rutaConfig == null) {
-            rutaConfig = "configServidor.properties";
+            rutaConfig = "src/main/resources/configServidor.properties";
         }
 
         try (InputStream input = Configuracion.class.getClassLoader()
@@ -33,7 +33,7 @@ public class Configuracion {
 
             maxSalones = Integer.parseInt(prop.getProperty("server.maxSalones", "380"));
             maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
-            ip = prop.getProperty("server.ip", "localhost");
+            ip = prop.getProperty("server.ip", "0.0.0.0");
             port = prop.getProperty("server.port", "5555");
             inproc = prop.getProperty("server.inproc","backend");
 

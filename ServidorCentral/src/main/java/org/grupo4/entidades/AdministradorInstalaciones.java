@@ -27,11 +27,29 @@ public class AdministradorInstalaciones {
         this.aulasMoviles = new ContadorAtomico(0);
     }
 
+    public AdministradorInstalaciones(int salones, int labs) {
+        this.salones = new ContadorAtomico(salones);
+        this.labs = new ContadorAtomico(labs);
+        this.aulasMoviles = new ContadorAtomico(0);
+    }
+
+
     public static AdministradorInstalaciones getInstance() {
         if (singleton == null) {
             synchronized(AdministradorInstalaciones.class) {
                 if(singleton == null) {
                     singleton = new AdministradorInstalaciones();
+                }
+            }
+        }
+        return singleton;
+    }
+
+    public static AdministradorInstalaciones getInstance(int salones, int labs) {
+        if (singleton == null) {
+            synchronized(AdministradorInstalaciones.class) {
+                if(singleton == null) {
+                    singleton = new AdministradorInstalaciones(salones, labs);
                 }
             }
         }
@@ -98,4 +116,5 @@ public class AdministradorInstalaciones {
         return String.format("Salones disponibles: %d, Laboratorios disponibles: %d, Aulas móviles: %d",
                 salones.get(), labs.get(), aulasMoviles.get());
     }
+
 }
