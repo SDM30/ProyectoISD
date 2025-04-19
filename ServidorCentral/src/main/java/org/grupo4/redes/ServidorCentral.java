@@ -11,9 +11,7 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 public class ServidorCentral {
     private String ip;
@@ -21,6 +19,11 @@ public class ServidorCentral {
     private String inproc;
     private int maxSalones;
     private int maxLabs;
+
+    private final List<Long> tiemposRespuesta = new ArrayList<>();
+    private int solicitudesAtendidas = 0;
+    private int solicitudesNoAtendidas = 0;
+
 
     public ServidorCentral(String rutaConfig) {
         List<String> configuraciones = Configuracion.cargarConfiguracionServidor(rutaConfig);
@@ -202,12 +205,17 @@ public class ServidorCentral {
 
             // 2. Segundo intento: Deserializar como Solicitud
             try {
+                long inicio = System.nanoTime();
                 Solicitud solicitud = mapper.readValue(requestJson, Solicitud.class);
                 enviarSolicitudATrabajador(clientAddr, requestJson, backend, workerQueue);
+                long fin = System.nanoTime();
+                registrarTiempoRespuesta(inicio, fin, true);
                 return;
+
             } catch (JsonProcessingException e) {
                 System.out.println("[DEBUG] No es solicitud de recursos: " + e.getMessage());
             }
+            registrarTiempoRespuesta(System.nanoTime(), System.nanoTime(), false);
 
         } catch (Exception e) {
             System.err.println("[BROKER] Error crítico: " + e.getMessage());
@@ -253,4 +261,34 @@ public class ServidorCentral {
         backend.sendMore("");
         backend.send(requestJson);
     }
+
+    public void registrarTiempoRespuesta(long inicio, long fin, boolean atendida) {
+        long duracion = fin - inicio;
+        tiemposRespuesta.add(duracion);
+
+        if (atendida) {
+            solicitudesAtendidas++;
+        } else {
+            solicitudesNoAtendidas++;
+        }
+    }
+
+    public void imprimirMetricas() {
+        if (tiemposRespuesta.isEmpty()) {
+            System.out.println("\n[SERVIDOR] No se registraron tiempos de respuesta.");
+            return;
+        }
+
+        long min = Collections.min(tiemposRespuesta);
+        long max = Collections.max(tiemposRespuesta);
+        double promedio = tiemposRespuesta.stream().mapToLong(Long::longValue).average().orElse(0.0);
+
+        System.out.println("\n--- MÉTRICAS DE DESEMPEÑO DEL SERVIDOR CENTRAL ---");
+        System.out.println("Solicitudes atendidas: " + solicitudesAtendidas);
+        System.out.println("Solicitudes no atendidas: " + solicitudesNoAtendidas);
+        System.out.printf("Tiempo mínimo de atención: %.2f ms%n", min / 1_000_000.0);
+        System.out.printf("Tiempo máximo de atención: %.2f ms%n", max / 1_000_000.0);
+        System.out.printf("Tiempo promedio de atención: %.2f ms%n", promedio / 1_000_000.0);
+    }
+
 }

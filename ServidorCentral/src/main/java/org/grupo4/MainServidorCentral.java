@@ -23,6 +23,7 @@ public class MainServidorCentral {
         }
 
         servidor.loadBalancingBroker();
+        servidor.imprimirMetricas();
     }
 
     private static ServidorCentral crearServidorConConfigPorDefecto() {
