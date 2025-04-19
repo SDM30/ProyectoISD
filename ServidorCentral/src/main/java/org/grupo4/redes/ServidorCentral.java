@@ -34,6 +34,14 @@ public class ServidorCentral {
         AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
     }
 
+    public ServidorCentral(String ip, String port, String inproc, int maxSalones, int maxLabs) {
+        this.ip = ip;
+        this.port = port;
+        this.inproc = inproc;
+        this.maxSalones = maxSalones;
+        this.maxLabs = maxLabs;
+    }
+
     /**
      * Método principal del broker que gestiona el balanceo de carga entre los trabajadores
      */
