@@ -14,9 +14,7 @@ import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
-import java.util.Properties;
-import java.util.Scanner;
+import java.util.*;
 
 public class MainFacultad {
 
@@ -24,6 +22,11 @@ public class MainFacultad {
 
     public static void main (String[] args) {
         ContenedorDatos datos = new ContenedorDatos();
+
+        List<Long> tiemposRespuesta = new ArrayList<>();
+        int solicitudesAtendidas = 0;
+        int solicitudesNoAtendidas = 0;
+
 
         if (interpreteArgumentos (args, datos)) {
 
@@ -42,10 +45,16 @@ public class MainFacultad {
 
 
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
-               res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
+                long inicio = System.nanoTime();
+                res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
+                long fin = System.nanoTime();
+                long duracion = fin - inicio;
+                tiemposRespuesta.add(duracion);
+
 
                if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
                    System.out.println(res.getInfoGeneral());
+                   solicitudesNoAtendidas++;
                    return;
                }
 
@@ -55,12 +64,31 @@ public class MainFacultad {
 
                 if (opcion.trim().equals("Si")) {
                     clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, true);
+                    solicitudesAtendidas++;
                 } else if (opcion.trim().equals("No")) {
                     clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, false);
+                    solicitudesNoAtendidas++;
                 } else {
                     System.out.println("Ingrese una opcion valida");
+                    solicitudesNoAtendidas++;
                 }
             }
+
+            if (!tiemposRespuesta.isEmpty()) {
+                long min = Collections.min(tiemposRespuesta);
+                long max = Collections.max(tiemposRespuesta);
+                double promedio = tiemposRespuesta.stream().mapToLong(Long::longValue).average().orElse(0.0);
+
+                System.out.println("\n--- MÉTRICAS DE DESEMPEÑO ---");
+                System.out.println("Solicitudes atendidas: " + solicitudesAtendidas);
+                System.out.println("Solicitudes no atendidas: " + solicitudesNoAtendidas);
+                System.out.printf("Tiempo mínimo de respuesta: %.2f ms%n", min / 1_000_000.0);
+                System.out.printf("Tiempo máximo de respuesta: %.2f ms%n", max / 1_000_000.0);
+                System.out.printf("Tiempo promedio de respuesta: %.2f ms%n", promedio / 1_000_000.0);
+            } else {
+                System.out.println("\nNo se registraron tiempos de respuesta.");
+            }
+
         }
     }
 
