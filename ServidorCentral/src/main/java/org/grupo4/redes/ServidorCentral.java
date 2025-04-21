@@ -60,6 +60,12 @@ public class ServidorCentral {
             // Cola de trabajadores disponibles
             Queue<String> workerQueue = new LinkedList<>();
 
+            // Registrar shutdown hook para manejar Ctrl+C
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("\nProceso Servidor Central Finalizado");
+                imprimirMetricas();
+            }));
+
             // Bucle principal del broker
             gestionarMensajes(context, frontend, backend, workerQueue);
         }
@@ -215,7 +221,7 @@ public class ServidorCentral {
             } catch (JsonProcessingException e) {
                 System.out.println("[DEBUG] No es solicitud de recursos: " + e.getMessage());
             }
-            registrarTiempoRespuesta(System.nanoTime(), System.nanoTime(), false);
+            registrarTiempoRespuesta(0, 0, false);
 
         } catch (Exception e) {
             System.err.println("[BROKER] Error crítico: " + e.getMessage());
