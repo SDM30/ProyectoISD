@@ -14,13 +14,9 @@ public class MainServidorCentral {
     public static void main(String[] args) {
         ServidorCentral servidor;
 
-        if (args.length > 0) {
-            // Usar archivo de propiedades proporcionado
-            servidor = new ServidorCentral(args[0]);
-        } else {
-            // Cargar configuración por defecto
-            servidor = crearServidorConConfigPorDefecto();
-        }
+
+        servidor = crearServidorConConfigPorDefecto();
+
 
         servidor.loadBalancingBroker();
 
