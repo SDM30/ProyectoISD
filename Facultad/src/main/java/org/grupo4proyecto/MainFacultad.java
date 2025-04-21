@@ -26,6 +26,7 @@ public class MainFacultad {
         List<Long> tiemposRespuesta = new ArrayList<>();
         int solicitudesAtendidas = 0;
         int solicitudesNoAtendidas = 0;
+        boolean atendida = false;
 
 
         if (interpreteArgumentos (args, datos)) {
@@ -45,32 +46,35 @@ public class MainFacultad {
 
 
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
-                long inicio = System.nanoTime();
-                res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
-                long fin = System.nanoTime();
-                long duracion = fin - inicio;
-                tiemposRespuesta.add(duracion);
 
+                for (int i = 0; i < solicitudes.size(); i++) {
+                    long inicio = System.nanoTime();
+                    res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(i));
+                    long fin = System.nanoTime();
+                    long duracion = fin - inicio;
+                    tiemposRespuesta.add(duracion);
 
-               if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
-                   System.out.println(res.getInfoGeneral());
-                   solicitudesNoAtendidas++;
-                   return;
-               }
+                    if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
+                        System.out.println(res.getInfoGeneral());
+                        solicitudesNoAtendidas++;
+                        return;
+                    }
 
-                System.out.println("Aceptas la asignacion: " + res + "\n Ingresa: Si o No");
-                System.out.print(">> ");
-                String opcion = scanner.nextLine();
+                    System.out.println(res + "\n Ingresa: Si o No");
+                    System.out.print(">> ");
+                    String opcion = scanner.nextLine();
 
-                if (opcion.trim().equals("Si")) {
-                    clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, true);
+                    if (opcion.trim().toLowerCase().equals("si")) {
+                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, true);
+                        facultad.getProgramas().get(i).setNumLabs(res.getSalonesAsignados());
+                        facultad.getProgramas().get(i).setNumLabs(res.getLabsAsignados());
+                    } else if (opcion.trim().toLowerCase().equals("no")) {
+                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, false);
+                    } else {
+                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, false);
+                        System.out.println("Ingrese una opcion valida");
+                    }
                     solicitudesAtendidas++;
-                } else if (opcion.trim().equals("No")) {
-                    clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, false);
-                    solicitudesNoAtendidas++;
-                } else {
-                    System.out.println("Ingrese una opcion valida");
-                    solicitudesNoAtendidas++;
                 }
             }
 

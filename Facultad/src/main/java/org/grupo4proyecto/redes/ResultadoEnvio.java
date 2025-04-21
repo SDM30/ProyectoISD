@@ -49,11 +49,11 @@ public class ResultadoEnvio {
 
     @Override
     public String toString() {
-        return "ResultadoEnvio{" +
-                "infoGeneral='" + infoGeneral + '\'' +
-                ", labsAsignados=" + labsAsignados +
-                ", aulaMovilAsignadas=" + aulaMovilAsignadas +
-                ", salonesAsignados=" + salonesAsignados +
-                '}';
+        return "==== RESULTADO ENVIO ====\n" +
+                "Informacion General = " + infoGeneral + "\n" +
+                "Laboratorios Asignados = " + labsAsignados + "\n" +
+                "Aulas Moviles Asignadas = " + aulaMovilAsignadas + "\n" +
+                "Salones Asignados = " + salonesAsignados + "\n" +
+                "======================";
     }
 }

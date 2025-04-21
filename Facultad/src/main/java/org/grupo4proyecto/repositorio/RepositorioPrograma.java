@@ -1,5 +1,6 @@
 package org.grupo4proyecto.repositorio;
 
+import org.grupo4proyecto.entidades.Programa;
 import org.grupo4proyecto.entidades.Solicitud;
 import java.io.*;
 
@@ -29,6 +30,7 @@ public class RepositorioPrograma {
     }
 
     private static Solicitud crearSolicitud(ContenedorDatos datos, String[] partes, int semestre) {
+        datos.facultad.getProgramas().add(new Programa(partes[0].trim()));
         return new Solicitud(
                 datos.facultad.getNombre(),
                 partes[0].trim(),
