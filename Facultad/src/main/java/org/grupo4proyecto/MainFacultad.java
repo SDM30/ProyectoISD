@@ -93,7 +93,7 @@ public class MainFacultad {
     }
 
     public static boolean interpreteArgumentos(String[] args, ContenedorDatos datos) {
-        // Nuevo formato de argumentos:
+        // formato de argumentos:
         // [0] Nombre facultad
         // [1] IP servidor
         // [2] Puerto
@@ -191,29 +191,6 @@ public class MainFacultad {
                 5,
                 5
         ));
-    }
-    
-    public static boolean validarInfoServidor(String dirIP, int numeroPuerto) {
-        try {
-            // Validación de IP
-            InetAddress direccion = InetAddress.getByName(dirIP);
-            if (!(direccion instanceof Inet4Address)) {
-                System.err.println("Error: Se requiere dirección IPv4");
-                return false;
-            }
-
-            // Validación de puerto
-            if (numeroPuerto < 1 || numeroPuerto > 65535) {
-                System.err.println("Error: Puerto inválido (1-65535)");
-                return false;
-            }
-
-            return true;
-
-        } catch (UnknownHostException e) {
-            System.err.println("Error: Formato de IP inválido");
-            return false;
-        }
     }
 
     public static void cargarConfiguracionServidor(Facultad facultad) {

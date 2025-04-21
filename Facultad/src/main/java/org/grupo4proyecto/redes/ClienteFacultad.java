@@ -30,7 +30,9 @@ public class ClienteFacultad implements AutoCloseable {
         cliente.setIdentity(idCliente.getBytes(ZMQ.CHARSET));
 
         System.out.println("[CLIENTE " + idCliente + "] Conectando a broker...");
-        cliente.connect("tcp://localhost:5555");
+        cliente.connect(
+                "tcp://"+facultad.getDirServidorCentral().getHostAddress()
+                        +":"+facultad.getPuertoServidorCentral());
     }
 
     //Metodos para comunicarse con el servidor central
