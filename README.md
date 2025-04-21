@@ -65,10 +65,11 @@ Este proyecto implementa un sistema de gestión de recursos académicos utilizan
    ```
 2. Ejecutar el servidor especificando la ruta del archivo:
 
-El nombre del jar por defecto para el servidor  `ServidorCentral-1.0-SNAPSHOT-jar-with-dependencies.jar`
+El nombre del jar por defecto para el servidor  `ServidorCentral-1.0-SNAPSHOT-jar-with-dependencies.jar`, Para colocar una configuración
+personalizada ingresa a `src/main/resources/configServidor.properties`
  
    ```bash
-   java -jar ServidorCentral.jar configServidor.properties
+   java -jar ServidorCentral.jar
    ```
 
 ### Ejecutar con valores por defecto
