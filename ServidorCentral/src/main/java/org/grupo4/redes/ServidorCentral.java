@@ -98,7 +98,7 @@ public class ServidorCentral {
      */
     private void iniciarTrabajadores(ZContext context) {
         System.out.println("[BROKER] Lanzando trabajadores...");
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 10; i++) {
             String workerId = String.valueOf(i);
             new Thread(new TrabajadorPeticion(context, workerId)).start();
             System.out.println("[BROKER] Trabajador " + workerId + " iniciado");
