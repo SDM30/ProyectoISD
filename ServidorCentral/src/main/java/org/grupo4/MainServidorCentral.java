@@ -23,7 +23,15 @@ public class MainServidorCentral {
         }
 
         servidor.loadBalancingBroker();
-        servidor.imprimirMetricas();
+
+        //Manejar interrupcion
+        Runtime.getRuntime().addShutdownHook(
+            new Thread(
+                () -> {
+                    servidor.imprimirMetricas();
+                }
+            )
+        );
     }
 
     private static ServidorCentral crearServidorConConfigPorDefecto() {
