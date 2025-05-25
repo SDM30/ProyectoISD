@@ -1,6 +1,9 @@
 package org.grupo4;
 
+import org.grupo4.redes.ManejadorHealthCheck;
 import org.grupo4.redes.ServidorCentral;
+import org.zeromq.ZContext;
+
 import java.io.InputStream;
 
 public class MainServidorCentral {
@@ -10,6 +13,10 @@ public class MainServidorCentral {
     private static final String DEFAULT_IP = "0.0.0.0";
     private static final String DEFAULT_PORT = "5555";
     private static final String DEFAULT_INPROC = "backend";
+
+    // Valores por defecto healthcheck
+    private static final String DEFAULT_HEALTHCHECK_IP = "0.0.0.0";
+    private static final String DEFAULT_HEALTHCHECK_PORT = "5554";
 
     public static void main(String[] args) {
         ServidorCentral servidor;
@@ -22,7 +29,18 @@ public class MainServidorCentral {
             servidor = crearServidorConConfigPorDefecto();
         }
 
-        servidor.loadBalancingBroker();
+        // Inicializar contexto compartido
+        ZContext context = new ZContext();
+
+        // responder a healthcheck
+        new Thread(new ManejadorHealthCheck(
+                context,
+                DEFAULT_HEALTHCHECK_IP,
+                DEFAULT_HEALTHCHECK_PORT
+        )).start();
+
+        // Atender peticiones
+        servidor.loadBalancingBroker(context);
 
         //Manejar interrupcion
         Runtime.getRuntime().addShutdownHook(

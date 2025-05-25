@@ -7,7 +7,6 @@ import org.grupo4.entidades.Solicitud;
 import org.grupo4.repositorio.Configuracion;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
 
@@ -48,8 +47,8 @@ public class ServidorCentral {
     /**
      * Método principal del broker que gestiona el balanceo de carga entre los trabajadores
      */
-    public void loadBalancingBroker() {
-        try (ZContext context = new ZContext()) {
+    public void loadBalancingBroker(ZContext context) {
+        try (context) {
             // Inicializar sockets
             Socket frontend = inicializarSocketFrontend(context);
             Socket backend = inicializarSocketBackend(context);
