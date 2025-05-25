@@ -12,19 +12,19 @@ import java.net.InetAddress;
 
 
 public class ClienteFacultad implements AutoCloseable {
-    private final ZContext contexto;
+    private final ZContext context;
     private final Socket cliente;
     private final Facultad facultad;
     private final ObjectMapper json = new ObjectMapper();
 
-    public ClienteFacultad(Facultad facultad) {
-        this.contexto = new ZContext();
+    public ClienteFacultad(Facultad facultad, ZContext context) {
+        this.context = context;
         this.facultad = facultad;
 
         InetAddress dirServidor = facultad.getDirServidorCentral();
         int puertoServidor = facultad.getPuertoServidorCentral();
 
-        this.cliente = contexto.createSocket(SocketType.REQ);
+        this.cliente = context.createSocket(SocketType.REQ);
 
         String idCliente = facultad.getNombre();
         cliente.setIdentity(idCliente.getBytes(ZMQ.CHARSET));
@@ -82,7 +82,7 @@ public class ClienteFacultad implements AutoCloseable {
 
     @Override
     public void close() {
-        contexto.close();
+        context.close();
         cliente.close();
     }
 }

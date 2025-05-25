@@ -4,6 +4,8 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMQ.Poller;
+import org.zeromq.ZMQException;
+
 
 public class PatronHealthCheck {
     private static final String DEFAULT_IP = "0.0.0.0";
@@ -54,6 +56,9 @@ public class PatronHealthCheck {
                         if (activateBackup(context, backupReq)) {
                             sendBackupIP(publisher);
                         } else {
+                            //Prueba publicador
+                            System.out.println("[HEALTHCHECK] Enviando Mensaje de respaldo...");
+                            sendBackupIP(publisher);
                             System.out.println("[HEALTHCHECK] No se pudo activar el respaldo.");
                         }
                         break;
@@ -70,7 +75,12 @@ public class PatronHealthCheck {
                 Thread.sleep(1000);
             }
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            if (e instanceof ZMQException) {
+                int code = ((ZMQException) e).getErrorCode();
+                System.err.println("Error: " + code);
+            } else {
+                System.err.println("Error: " + e.getMessage());
+            }
         }
     }
 
@@ -84,30 +94,39 @@ public class PatronHealthCheck {
     private static void sendBackupIP(Socket publisher) {
         String topic = "BACKUP";
         String message = topic + " " + BACKUP_IP;
-        publisher.send(message.getBytes(ZMQ.CHARSET), 0);
         if (DEBUG) System.out.println("[HEALTHCHECK] Publicado BACKUP IP: " + BACKUP_IP);
+        publisher.send(message.getBytes(ZMQ.CHARSET), 0);
     }
 
     private static boolean activateBackup(ZContext context, Socket backupReq) {
         int retriesLeft = REQUEST_RETRIES;
         while (retriesLeft-- > 0) {
-            if (DEBUG) System.out.println("[HEALTHCHECK] Activando respaldo...");
-            backupReq.send("ACTIVACION".getBytes(ZMQ.CHARSET), 0);
+            try {
+                if (DEBUG) System.out.println("[HEALTHCHECK] Activando respaldo...");
+                backupReq.send("ACTIVACION".getBytes(ZMQ.CHARSET), 0);
 
-            ZMQ.Poller poller = context.createPoller(1);
-            poller.register(backupReq, ZMQ.Poller.POLLIN);
-            int rc = poller.poll(REQUEST_TIMEOUT);
-            if (rc > 0 && poller.pollin(0)) {
-                byte[] reply = backupReq.recv(0);
-                if (reply != null && new String(reply, ZMQ.CHARSET).equalsIgnoreCase("OK")) {
-                    if (DEBUG) System.out.println("[HEALTHCHECK] Respaldo activado correctamente.");
-                    poller.close();
-                    return true;
+                ZMQ.Poller poller = context.createPoller(1);
+                poller.register(backupReq, ZMQ.Poller.POLLIN);
+                int rc = poller.poll(REQUEST_TIMEOUT);
+                if (rc > 0 && poller.pollin(0)) {
+                    byte[] reply = backupReq.recv(0);
+                    if (reply != null) {
+                        if (DEBUG) System.out.println("[HEALTHCHECK] Respaldo respondió a la activación.");
+                        poller.close();
+                        return true;
+                    }
+                } else {
+                    if (DEBUG) System.out.println("[HEALTHCHECK] No se recibió respuesta de activación, reintentando...");
                 }
-            } else {
+                poller.close();
+            } catch (Exception e) {
                 if (DEBUG) System.out.println("[HEALTHCHECK] No se recibió respuesta de activación, reintentando...");
             }
-            poller.close();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
         return false;
     }
