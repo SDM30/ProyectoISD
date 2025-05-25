@@ -44,7 +44,13 @@ public class ClienteFacultad implements AutoCloseable {
             cliente.send(payload);
             System.out.println("[CLIENTE] Solicitud enviada, esperando respuesta...");
 
+            cliente.setReceiveTimeOut(1000); // 1 second timeout
             String respuesta = cliente.recvStr();
+
+            if (respuesta == null) {
+                System.out.println("[CLIENTE] Timeout esperando respuesta del servidor.");
+                return null;
+            }
 
             System.out.println("[CLIENTE] Respuesta recibida: " + respuesta);
 
@@ -71,7 +77,15 @@ public class ClienteFacultad implements AutoCloseable {
 
             System.out.println("[CLIENTE " + facultad.getNombre() + "] Enviando confirmación: " + payload);
 
-            return cliente.recvStr();
+            cliente.setReceiveTimeOut(1000); // 1 second timeout
+            String respuesta = cliente.recvStr();
+
+            if (respuesta == null) {
+                System.out.println("[CLIENTE] Timeout esperando confirmación del servidor.");
+                return "[CLIENTE] Timeout en la recepción de la confirmación";
+            }
+
+            return respuesta;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -82,7 +96,6 @@ public class ClienteFacultad implements AutoCloseable {
 
     @Override
     public void close() {
-        context.close();
         cliente.close();
     }
 }

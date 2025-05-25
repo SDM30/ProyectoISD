@@ -53,29 +53,35 @@ public class MainFacultad {
                     long duracion = fin - inicio;
                     tiemposRespuesta.add(duracion);
 
+                    if (res == null) {
+                        System.out.println("[CLIENTE] No se recibió respuesta del servidor.");
+                        solicitudesNoAtendidas++;
+                        continue;
+                    }
+
                     if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
                         System.out.println(res.getInfoGeneral());
                         solicitudesNoAtendidas++;
                         return;
                     }
 
-                    System.out.println(res + "\n Ingresa: Si o No");
-                    System.out.print(">> ");
-                    String opcion = scanner.nextLine();
-
-                    if (opcion.trim().toLowerCase().equals("si")) {
-                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, true);
-                        facultad.getProgramas().get(i).setNumLabs(res.getSalonesAsignados());
-                        facultad.getProgramas().get(i).setNumLabs(res.getLabsAsignados());
-                    } else if (opcion.trim().toLowerCase().equals("no")) {
-                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, false);
-                    } else {
-                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, false);
-                        System.out.println("Ingrese una opcion valida");
-                    }
+                    clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, true);
+                    facultad.getProgramas().get(i).setNumLabs(res.getSalonesAsignados());
+                    facultad.getProgramas().get(i).setNumLabs(res.getLabsAsignados());
                     solicitudesAtendidas++;
                 }
             }
+
+            System.out.println("Press ENTER to terminate...");
+            try {
+                System.in.read();
+                // Detener el suscriptor
+                facultad.getSuscriptor().detener();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
 
             if (!tiemposRespuesta.isEmpty()) {
                 long min = Collections.min(tiemposRespuesta);
@@ -129,41 +135,41 @@ public class MainFacultad {
 
     private static void mostrarAyuda() {
         String ayuda = """
-    ==================================================================
-    SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
-    ==================================================================
-
-    Modo de uso:
-    1. Sin parámetros (valores por defecto):
-       java -jar Facultad.jar
-       * Usará:
-         - Nombre facultad: 'Facultad de Ingeniería'
-         - IP servidor: localhost
-         - Puerto: 5555
-         - IP healthcheck: 127.0.0.1
-         - Puerto healthcheck: 5553
-         - Semestre: 1
-         - Programas: programaDefecto.txt
-
-    2. Con parámetros personalizados:
-       java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck> [semestre] [archivo_programas]
-
-       Ejemplo completo:
-       java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 192.168.1.101 5553 2 misProgramas.txt
-
-    3. Parámetros mínimos requeridos:
-       java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck>
-
-       Ejemplo:
-       java -jar Facultad.jar "Facultad de Medicina" 127.0.0.1 5556 127.0.0.1 5553
-
-    ==================================================================
-    ARCHIVOS DE CONFIGURACIÓN:
-    - configCliente.properties: Contiene IP/puerto por defecto
-    - programaDefecto.txt: Listado de programas con formato:
-      Nombre Programa,salones,laboratorios
-    ==================================================================
-    """;
+            ==================================================================
+            SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
+            ==================================================================
+        
+            Modo de uso:
+            1. Sin parámetros (valores por defecto):
+               java -jar Facultad.jar
+               * Usará:
+                 - Nombre facultad: 'Facultad de Ingeniería'
+                 - IP servidor: localhost
+                 - Puerto: 5555
+                 - IP healthcheck: 127.0.0.1
+                 - Puerto healthcheck: 5553
+                 - Semestre: 1
+                 - Programas: programaDefecto.txt
+        
+            2. Con parámetros personalizados:
+               java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck> [semestre] [archivo_programas]
+        
+               Ejemplo completo:
+               java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 192.168.1.101 5553 2 misProgramas.txt
+        
+            3. Parámetros mínimos requeridos:
+               java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck>
+        
+               Ejemplo:
+               java -jar Facultad.jar "Facultad de Medicina" 127.0.0.1 5556 127.0.0.1 5553
+        
+            ==================================================================
+            ARCHIVOS DE CONFIGURACIÓN:
+            - configCliente.properties: Contiene IP/puerto por defecto
+            - programaDefecto.txt: Listado de programas con formato:
+              Nombre Programa,salones,laboratorios
+            ==================================================================
+        """;
         System.out.println(ayuda);
     }
 

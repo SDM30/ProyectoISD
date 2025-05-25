@@ -84,4 +84,8 @@ public class Facultad {
         subThread.setDaemon(true);
         subThread.start();
     }
+
+    public SuscriptorFacultad getSuscriptor() {
+        return suscriptor;
+    }
 }

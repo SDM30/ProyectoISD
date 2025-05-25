@@ -7,6 +7,7 @@ public class SuscriptorFacultad {
     private static final String TOPIC = "BACKUP";
     private String IP_HEALTHCHECK = "0.0.0.0";
     private String PUERTO_HEALTHCHECK = "5553";
+    private volatile boolean activo = true;
 
     public SuscriptorFacultad(String ip, String puerto) {
         this.IP_HEALTHCHECK = ip;
@@ -14,24 +15,31 @@ public class SuscriptorFacultad {
     }
 
     public void recibirMensajes(ZContext context) {
-        try (context) {
-            ZMQ.Socket socket = context.createSocket(ZMQ.SUB);
+        ZMQ.Socket socket = context.createSocket(ZMQ.SUB);
 
-            System.out.println("[SUBSCRIBER] Conectando a Publicador "
-                    + IP_HEALTHCHECK + ":"
-                    + PUERTO_HEALTHCHECK
-                    + " con el tema: " + TOPIC);
-            socket.connect("tcp://" + IP_HEALTHCHECK + ":" + PUERTO_HEALTHCHECK);
-            socket.subscribe(TOPIC.getBytes(ZMQ.CHARSET));
+        System.out.println("[SUBSCRIBER] Conectando a Publicador "
+                + IP_HEALTHCHECK + ":"
+                + PUERTO_HEALTHCHECK
+                + " con el tema: " + TOPIC);
+        socket.connect("tcp://" + IP_HEALTHCHECK + ":" + PUERTO_HEALTHCHECK);
+        socket.subscribe(TOPIC.getBytes(ZMQ.CHARSET));
 
-            while (!Thread.currentThread().isInterrupted()) {
+        try {
+            while (activo && !Thread.currentThread().isInterrupted()) {
                 byte[] mensaje = socket.recv(0);
+                if (mensaje == null) break; // Context closed or interrupted
                 String mensajeStr = new String(mensaje, ZMQ.CHARSET);
                 System.out.println("[SUBSCRIBER] Mensaje recibido: " + mensajeStr);
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            socket.close();
         }
+    }
+
+    public void detener() {
+        activo = false;
     }
 
 
