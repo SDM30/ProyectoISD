@@ -3,9 +3,7 @@ package org.grupo4.entidades;
 import org.grupo4.concurrencia.ContadorAtomico;
 import org.grupo4.redes.ResultadoEnvio;
 
-import java.io.InputStream;
 import java.util.List;
-import java.util.Properties;
 
 import static org.grupo4.repositorio.Configuracion.cargarConfiguracionServidor;
 
@@ -15,15 +13,21 @@ public class AdministradorInstalaciones {
     private final ContadorAtomico labs;
     private final ContadorAtomico aulasMoviles;
 
-    public AdministradorInstalaciones(int salones, int labs) {
-        this.salones = new ContadorAtomico(salones);
-        this.labs = new ContadorAtomico(labs);
+    // Valores maximos parametrizables
+    public AdministradorInstalaciones() {
+        List<String> valores = cargarConfiguracionServidor(null);
+
+        int maxSalones = Integer.parseInt(valores.get(0));
+        int maxLabs = Integer.parseInt(valores.get(1));
+
+        this.salones = new ContadorAtomico(maxSalones);
+        this.labs = new ContadorAtomico(maxLabs);
         this.aulasMoviles = new ContadorAtomico(0);
     }
 
-    public AdministradorInstalaciones() {
-        this.salones = new ContadorAtomico(0);
-        this.labs = new ContadorAtomico(0);
+    public AdministradorInstalaciones(int salones, int labs) {
+        this.salones = new ContadorAtomico(salones);
+        this.labs = new ContadorAtomico(labs);
         this.aulasMoviles = new ContadorAtomico(0);
     }
 

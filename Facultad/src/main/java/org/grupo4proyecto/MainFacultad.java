@@ -1,17 +1,16 @@
 package org.grupo4proyecto;
 
-
 import org.grupo4proyecto.entidades.Facultad;
 import org.grupo4proyecto.entidades.Solicitud;
 import org.grupo4proyecto.redes.ClienteFacultad;
 import org.grupo4proyecto.redes.ResultadoEnvio;
 import org.grupo4proyecto.repositorio.ContenedorDatos;
 import org.grupo4proyecto.repositorio.RepositorioPrograma;
+import org.zeromq.ZContext;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -20,16 +19,14 @@ public class MainFacultad {
 
     static int semestrePorDefecto = 1;
 
-    public static void main (String[] args) {
+    public static void main(String[] args) {
         ContenedorDatos datos = new ContenedorDatos();
 
         List<Long> tiemposRespuesta = new ArrayList<>();
         int solicitudesAtendidas = 0;
         int solicitudesNoAtendidas = 0;
-        boolean atendida = false;
 
-
-        if (interpreteArgumentos (args, datos)) {
+        if (interpreteArgumentos(args, datos)) {
 
             if (datos.solicitudes.isEmpty()) {
                 cargarSolicitudesEmergencia(datos);
@@ -39,13 +36,17 @@ public class MainFacultad {
             List<Solicitud> solicitudes = datos.solicitudes;
             ResultadoEnvio res = null;
 
-            System.out.println (facultad.toString());
-            System.out.println (solicitudes.toString());
+            System.out.println(facultad.toString());
+            System.out.println(solicitudes.toString());
 
             Scanner scanner = new Scanner(System.in);
+            ZContext context = new ZContext();
 
+            facultad.iniciarSuscriptor(context, facultad);
 
-            try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
+            try (ClienteFacultad clienteFacultad = new ClienteFacultad(facultad, context)) {
+                // Registrar el ClienteFacultad como listener
+                facultad.getSuscriptor().setIpChangeListener(clienteFacultad);
 
                 for (int i = 0; i < solicitudes.size(); i++) {
                     long inicio = System.nanoTime();
@@ -54,28 +55,38 @@ public class MainFacultad {
                     long duracion = fin - inicio;
                     tiemposRespuesta.add(duracion);
 
+                    if (res == null) {
+                        System.out.println("[CLIENTE] No se recibió respuesta del servidor.");
+                        solicitudesNoAtendidas++;
+                        clienteFacultad.getSolicitudesPendientes().add(solicitudes.get(i));
+                        continue;
+                    }
+
                     if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
                         System.out.println(res.getInfoGeneral());
                         solicitudesNoAtendidas++;
                         return;
                     }
 
-                    System.out.println(res + "\n Ingresa: Si o No");
-                    System.out.print(">> ");
-                    String opcion = scanner.nextLine();
-
-                    if (opcion.trim().toLowerCase().equals("si")) {
-                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, true);
-                        facultad.getProgramas().get(i).setNumLabs(res.getSalonesAsignados());
-                        facultad.getProgramas().get(i).setNumLabs(res.getLabsAsignados());
-                    } else if (opcion.trim().toLowerCase().equals("no")) {
-                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, false);
-                    } else {
-                        clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, false);
-                        System.out.println("Ingrese una opcion valida");
-                    }
+                    clienteFacultad.confirmarAsignacion(solicitudes.get(i), res, true);
+                    facultad.getProgramas().get(i).setNumLabs(res.getSalonesAsignados());
+                    facultad.getProgramas().get(i).setNumLabs(res.getLabsAsignados());
                     solicitudesAtendidas++;
                 }
+                // Opcional: Imprimir pendientes o realizar reintentos.
+                System.out.println("[CLIENTE] Solicitudes pendientes locales: " + clienteFacultad.getSolicitudesPendientes().size());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            System.out.println("Press ENTER to terminate...");
+            try {
+                System.in.read();
+                // Detener el suscriptor
+                facultad.getSuscriptor().detener();
+                System.out.println("IP DEL SERVIDOR: " + facultad.getDirServidorCentral().getHostAddress());
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
             if (!tiemposRespuesta.isEmpty()) {
@@ -92,28 +103,22 @@ public class MainFacultad {
             } else {
                 System.out.println("\nNo se registraron tiempos de respuesta.");
             }
-
         }
     }
 
     public static boolean interpreteArgumentos(String[] args, ContenedorDatos datos) {
-        // formato de argumentos:
-        // [0] Nombre facultad
-        // [1] IP servidor
-        // [2] Puerto
-        // [3] Semestre (opcional)
-        // [4] Archivo programas (opcional)
-
-        if (args.length >= 3) {
+        if (args.length >= 5) {
             try {
                 datos.facultad.setNombre(args[0]);
                 datos.facultad.setDirServidorCentral(InetAddress.getByName(args[1]));
                 datos.facultad.setPuertoServidorCentral(Integer.parseInt(args[2]));
+                datos.facultad.setIpHealthcheck(args[3]);
+                datos.facultad.setPuertoHealthcheck(Integer.parseInt(args[4]));
 
-                int semestre = args.length >= 4 ? Integer.parseInt(args[3]) : 1;
+                int semestre = args.length >= 6 ? Integer.parseInt(args[5]) : 1;
 
-                if (args.length >= 5) {
-                    RepositorioPrograma.inicializarCliente(datos, args[4], semestre);
+                if (args.length >= 7) {
+                    RepositorioPrograma.inicializarCliente(datos, args[6], semestre);
                 } else {
                     cargarProgramasPorDefecto(datos, semestre);
                 }
@@ -125,7 +130,6 @@ public class MainFacultad {
                 return false;
             }
         } else if (args.length == 0) {
-            // Valores por defecto
             datos.facultad.setNombre("Facultad de Ingeniería");
             cargarConfiguracionServidor(datos.facultad);
             cargarProgramasPorDefecto(datos, semestrePorDefecto);
@@ -135,45 +139,43 @@ public class MainFacultad {
         return false;
     }
 
-    /**
-     * Muestra las instrucciones de uso del programa
-     */
     private static void mostrarAyuda() {
         String ayuda = """
-        ==================================================================
-        SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
-        ==================================================================
+            ==================================================================
+            SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
+            ==================================================================
         
-        Modo de uso:
-        1. Sin parámetros (valores por defecto):
-           java -jar Facultad.jar
-           * Usará:
-             - Nombre facultad: 'Facultad de Ingeniería'
-             - IP servidor: localhost
-             - Puerto: 5555
-             - Semestre: 1
-             - Programas: programaDefecto.txt
+            Modo de uso:
+            1. Sin parámetros (valores por defecto):
+               java -jar Facultad.jar
+               * Usará:
+                 - Nombre facultad: 'Facultad de Ingeniería'
+                 - IP servidor: localhost
+                 - Puerto: 5555
+                 - IP healthcheck: 127.0.0.1
+                 - Puerto healthcheck: 5553
+                 - Semestre: 1
+                 - Programas: programaDefecto.txt
         
-        2. Con parámetros personalizados:
-           java -jar Facultad.jar <nombre> <ip> <puerto> [semestre] [archivo_programas]
-           
-           Ejemplo completo:
-           java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 2 misProgramas.txt
+            2. Con parámetros personalizados:
+               java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck> [semestre] [archivo_programas]
         
-        3. Parámetros mínimos requeridos:
-           java -jar Facultad.jar <nombre> <ip> <puerto>
-           
-           Ejemplo:
-           java -jar Facultad.jar "Facultad de Medicina" 127.0.0.1 5556
+               Ejemplo completo:
+               java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 192.168.1.101 5553 2 misProgramas.txt
         
-        ==================================================================
-        ARCHIVOS DE CONFIGURACIÓN:
-        - configCliente.properties: Contiene IP/puerto por defecto
-        - programaDefecto.txt: Listado de programas con formato:
-          Nombre Programa,salones,laboratorios
-        ==================================================================
+            3. Par��metros mínimos requeridos:
+               java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck>
+        
+               Ejemplo:
+               java -jar Facultad.jar "Facultad de Medicina" 127.0.0.1 5556 127.0.0.1 5553
+        
+            ==================================================================
+            ARCHIVOS DE CONFIGURACIÓN:
+            - configCliente.properties: Contiene IP/puerto por defecto
+            - programaDefecto.txt: Listado de programas con formato:
+              Nombre Programa,salones,laboratorios
+            ==================================================================
         """;
-
         System.out.println(ayuda);
     }
 
@@ -198,14 +200,10 @@ public class MainFacultad {
     }
 
     public static void cargarConfiguracionServidor(Facultad facultad) {
-
         try (InputStream input = new FileInputStream("src/main/resources/configCliente.properties")) {
-
             Properties prop = new Properties();
-            // Cargar archivo de propiedades
             prop.load(input);
 
-            // Obtener y validar dirección IP
             String ip = prop.getProperty("server.ip", "localhost");
             try {
                 InetAddress direccion = InetAddress.getByName(ip);
@@ -215,7 +213,6 @@ public class MainFacultad {
                 facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
             }
 
-            // Obtener y validar puerto
             String puerto = prop.getProperty("server.port", "5555");
             try {
                 facultad.setPuertoServidorCentral(Integer.parseInt(puerto));
@@ -224,11 +221,23 @@ public class MainFacultad {
                 facultad.setPuertoServidorCentral(5555);
             }
 
+            String ipHealth = prop.getProperty("server.healthcheck", "localhost");
+            facultad.setIpHealthcheck(ipHealth);
+
+            String puertoHealth = prop.getProperty("server.healthcheck.port", "5553");
+            try {
+                facultad.setPuertoHealthcheck(Integer.parseInt(puertoHealth));
+            } catch (NumberFormatException e) {
+                System.err.println("Puerto healthcheck inválido en configuración, usando 5553");
+                facultad.setPuertoHealthcheck(5553);
+            }
+
         } catch (IOException e) {
             System.err.println("No se encontró configCliente.properties, usando valores por defecto");
-            // Valores por defecto
             facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
             facultad.setPuertoServidorCentral(5555);
+            facultad.setIpHealthcheck("localhost");
+            facultad.setPuertoHealthcheck(5553);
         }
     }
 }

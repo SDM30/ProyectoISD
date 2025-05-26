@@ -1,5 +1,8 @@
 package org.grupo4proyecto.entidades;
 
+import org.grupo4proyecto.redes.SuscriptorFacultad;
+import org.zeromq.ZContext;
+
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +12,7 @@ public class Facultad {
     private List<Programa> programas;
     private InetAddress dirServidorCentral;
     private int puertoServidorCentral;
+    private SuscriptorFacultad suscriptor;
 
     public Facultad (String nombre, List<Programa> programas, InetAddress dirServidorCentral, int puertoServidorCentral) {
         this.nombre = nombre;
@@ -22,6 +26,7 @@ public class Facultad {
         this.programas = new ArrayList<Programa> ();
         this.dirServidorCentral = null;
         puertoServidorCentral = 0;
+        this.suscriptor = new SuscriptorFacultad("","");
     }
 
     public String getNombre () {
@@ -66,4 +71,21 @@ public class Facultad {
                 '}';
     }
 
+    public void setIpHealthcheck(String ip) {
+        suscriptor.setIpHealthcheck(ip);
+    }
+
+    public void setPuertoHealthcheck(int puerto) {
+        suscriptor.setPuertoHealthcheck(String.valueOf(puerto));
+    }
+
+    public void iniciarSuscriptor(ZContext context, Facultad facultad) {
+        Thread subThread = new Thread(() -> suscriptor.recibirMensajes(context, facultad));
+        subThread.setDaemon(true);
+        subThread.start();
+    }
+
+    public SuscriptorFacultad getSuscriptor() {
+        return suscriptor;
+    }
 }

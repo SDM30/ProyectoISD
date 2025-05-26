@@ -32,7 +32,7 @@ public class ServidorCentral {
         this.port = configuraciones.get(3);
         this.inproc = configuraciones.size() > 4 ? configuraciones.get(4) : "backend";
 
-        // Inicializar el administrador de instalaciones
+        // Inicializar el administrador de instalaciones con los valores de configuración
         AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
     }
 
@@ -42,9 +42,6 @@ public class ServidorCentral {
         this.inproc = inproc;
         this.maxSalones = maxSalones;
         this.maxLabs = maxLabs;
-
-        // Inicializar el administrador de instalaciones
-        AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
     }
 
     /**
@@ -100,7 +97,7 @@ public class ServidorCentral {
      */
     private void iniciarTrabajadores(ZContext context) {
         System.out.println("[BROKER] Lanzando trabajadores...");
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 5; i++) {
             String workerId = String.valueOf(i);
             new Thread(new TrabajadorPeticion(context, workerId)).start();
             System.out.println("[BROKER] Trabajador " + workerId + " iniciado");

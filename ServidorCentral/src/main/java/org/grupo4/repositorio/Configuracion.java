@@ -21,29 +21,25 @@ public class Configuracion {
         String port = "5555";
         String inproc = "backend";
 
-        // Corregir ruta por defecto
-        if (rutaConfig == null) {
-            rutaConfig = "configServidor.properties"; // Ruta desde classpath
+        if(rutaConfig == null) {
+            rutaConfig = "src/main/resources/configServidor.properties";
         }
 
         try (InputStream input = Configuracion.class.getClassLoader()
                 .getResourceAsStream(rutaConfig)) {
 
-            if (input != null) { // Evitar NPE si el archivo no existe
-                Properties prop = new Properties();
-                prop.load(input);
+            Properties prop = new Properties();
+            prop.load(input);
 
-                maxSalones = Integer.parseInt(prop.getProperty("server.maxSalones", "380"));
-                maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
-                ip = prop.getProperty("server.ip", "0.0.0.0");
-                port = prop.getProperty("server.port", "5555");
-                inproc = prop.getProperty("server.inproc", "backend");
-            } else {
-                System.err.println("Archivo de configuración no encontrado. Usando valores por defecto.");
-            }
+            maxSalones = Integer.parseInt(prop.getProperty("server.maxSalones", "380"));
+            maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
+            ip = prop.getProperty("server.ip", "0.0.0.0");
+            port = prop.getProperty("server.port", "5555");
+            inproc = prop.getProperty("server.inproc","backend");
 
         } catch (Exception e) {
-            System.err.println("Error cargando configuración. Usando valores por defecto. Detalle: " + e.getMessage());
+            System.err.println("Error cargando configuración. Usando valores por defecto. Detalle: "
+                    + e.getMessage());
         }
 
         List<String> valores = new ArrayList<>();
