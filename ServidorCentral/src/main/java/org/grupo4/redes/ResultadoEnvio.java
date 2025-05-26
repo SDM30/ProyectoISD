@@ -1,14 +1,15 @@
 package org.grupo4.redes;
 
 public class ResultadoEnvio {
-    private String facultadPrograma;
+    private String uuid;
     private String infoGeneral;
     private int labsAsignados;
     private int aulaMovilAsignadas;
     private int salonesAsignados;
 
-    public ResultadoEnvio(String facultadPrograma, String infoGeneral, int labsAsignados, int aulaMovilAsignadas, int salonesAsignados) {
-        this.facultadPrograma = facultadPrograma;
+    public ResultadoEnvio(String uuid,String infoGeneral, int labsAsignados,
+                          int aulaMovilAsignadas, int salonesAsignados) {
+        this.uuid = uuid;
         this.infoGeneral = infoGeneral;
         this.labsAsignados = labsAsignados;
         this.aulaMovilAsignadas = aulaMovilAsignadas;
@@ -17,12 +18,12 @@ public class ResultadoEnvio {
 
     public ResultadoEnvio() {}
 
-    public String getFacultadPrograma() {
-        return facultadPrograma;
+    public String getUuid() {
+        return uuid;
     }
 
-    public void setFacultadPrograma(String facultadPrograma) {
-        this.facultadPrograma = facultadPrograma;
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public String getInfoGeneral() {
@@ -60,7 +61,7 @@ public class ResultadoEnvio {
     @Override
     public String toString() {
         return "ResultadoEnvio{" +
-                "facultadPrograma='" + facultadPrograma + '\'' +
+                "uuid='" + uuid + '\'' +
                 ", infoGeneral='" + infoGeneral + '\'' +
                 ", labsAsignados=" + labsAsignados +
                 ", aulaMovilAsignadas=" + aulaMovilAsignadas +

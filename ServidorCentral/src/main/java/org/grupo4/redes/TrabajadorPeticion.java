@@ -101,7 +101,7 @@ public class TrabajadorPeticion extends Thread{
                     peticion.getNumLaboratorios());
 
             ResultadoEnvio resEnvio = new ResultadoEnvio(
-                    peticion.getFacultad() + "-" + peticion.getPrograma(),
+                    peticion.getUuid(),
                     obtenerInfoGeneral(resultado, peticion),
                     resultado.labsAsignados(),
                     resultado.aulaMovilAsignadas(),

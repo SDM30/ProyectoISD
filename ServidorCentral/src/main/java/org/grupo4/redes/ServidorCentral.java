@@ -325,15 +325,11 @@ public class ServidorCentral {
     }
 
     private void registrarSolicitudAtendida(ResultadoEnvio resultadoEnvio) {
-        String[] facultadProgramaSplit = resultadoEnvio.getFacultadPrograma().split("-");
         Solicitud atendida = null;
 
         // Buscar la solicitud que coincida en la lista de no atendidas
         for (Solicitud solicitud : solicitudesNoAtendidas) {
-            if (solicitud.getNumSalones() == resultadoEnvio.getSalonesAsignados() &&
-                    solicitud.getNumLaboratorios() == resultadoEnvio.getAulaMovilAsignadas() &&
-                    solicitud.getFacultad().equals(facultadProgramaSplit[0]) &&
-                    solicitud.getPrograma().equals(facultadProgramaSplit[1])) {
+            if (solicitud.getUuid().equals(resultadoEnvio.getUuid())) {
                 solicitudesAtendidas.add(solicitud);
                 atendida = solicitud;
                 System.out.println("[PERSISTENCIA] Solicitud atendida registrada: " + atendida);
