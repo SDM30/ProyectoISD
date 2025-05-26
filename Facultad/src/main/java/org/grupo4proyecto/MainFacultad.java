@@ -42,7 +42,7 @@ public class MainFacultad {
             Scanner scanner = new Scanner(System.in);
             ZContext context = new ZContext();
 
-            facultad.iniciarSuscriptor(context);
+            facultad.iniciarSuscriptor(context, facultad);
 
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(facultad, context)) {
 
@@ -77,6 +77,7 @@ public class MainFacultad {
                 System.in.read();
                 // Detener el suscriptor
                 facultad.getSuscriptor().detener();
+                System.out.println("IP DEL SERVIDOR: " + facultad.getDirServidorCentral().getHostAddress());
             } catch (IOException e) {
                 e.printStackTrace();
             }

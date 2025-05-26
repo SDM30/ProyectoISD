@@ -79,8 +79,8 @@ public class Facultad {
         suscriptor.setPuertoHealthcheck(String.valueOf(puerto));
     }
 
-    public void iniciarSuscriptor(ZContext context) {
-        Thread subThread = new Thread(() -> suscriptor.recibirMensajes(context));
+    public void iniciarSuscriptor(ZContext context, Facultad facultad) {
+        Thread subThread = new Thread(() -> suscriptor.recibirMensajes(context, facultad));
         subThread.setDaemon(true);
         subThread.start();
     }

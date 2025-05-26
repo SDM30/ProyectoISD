@@ -13,7 +13,7 @@ public class PatronHealthCheck {
     private static final String DEFAULT_PORT_PUBLISHER = "5553";
     private static String PORT_BACKUP = "5552";
     private static final String USAGE = "Uso: java PatronHealthCheck <ip> <puerto> <backup_ip> <puerto_publicador>";
-    private static String BACKUP_IP = "0.0.0.0";
+    private static String BACKUP_IP = "127.0.0.1";
     private static final int REQUEST_TIMEOUT = 2500;
     private static final int REQUEST_RETRIES = 3;
     private static boolean DEBUG = true;

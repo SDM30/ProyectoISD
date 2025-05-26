@@ -1,5 +1,6 @@
 package org.grupo4.repositorio;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,9 @@ public class Configuracion {
      *   server.maxLabs = <valor>
      *   server.ip = <valor>
      *   server.port = <valor>
+     *   server.inproc = <valor>
+     *   server.iphealthcheck = <valor>
+     *   server.porthealthcheck = <valor>
      */
     public static List<String> cargarConfiguracionServidor(String rutaConfig) {
         // Valores por defecto
@@ -20,23 +24,39 @@ public class Configuracion {
         String ip = "0.0.0.0";
         String port = "5555";
         String inproc = "backend";
+        String ipHealthcheck = "0.0.0.0";
+        String portHealthcheck = "5554";
 
-        if(rutaConfig == null) {
-            rutaConfig = "src/main/resources/configServidor.properties";
-        }
-
-        try (InputStream input = Configuracion.class.getClassLoader()
-                .getResourceAsStream(rutaConfig)) {
+        try {
+            final InputStream input;
+            if (rutaConfig == null) {
+                // Cargar archivo por defecto desde resources
+                input = Configuracion.class.getClassLoader().getResourceAsStream("configServidor.properties");
+                if (input == null) {
+                    throw new Exception("No se encontró el archivo de configuración por defecto");
+                }
+            } else {
+                // Intentar primero como recurso
+                InputStream resourceInput = Configuracion.class.getClassLoader().getResourceAsStream(rutaConfig);
+                if (resourceInput != null) {
+                    input = resourceInput;
+                } else {
+                    // Si no está en resources, intentar como archivo en el sistema
+                    input = new FileInputStream(rutaConfig);
+                }
+            }
 
             Properties prop = new Properties();
-            prop.load(input);
-
-            maxSalones = Integer.parseInt(prop.getProperty("server.maxSalones", "380"));
-            maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
-            ip = prop.getProperty("server.ip", "0.0.0.0");
-            port = prop.getProperty("server.port", "5555");
-            inproc = prop.getProperty("server.inproc","backend");
-
+            try (input) {
+                prop.load(input);
+                maxSalones = Integer.parseInt(prop.getProperty("server.maxSalones", "380"));
+                maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
+                ip = prop.getProperty("server.ip", "0.0.0.0");
+                port = prop.getProperty("server.port", "5555");
+                inproc = prop.getProperty("server.inproc", "backend");
+                ipHealthcheck = prop.getProperty("server.iphealthcheck", "0.0.0.0");
+                portHealthcheck = prop.getProperty("server.porthealthcheck", "5554");
+            }
         } catch (Exception e) {
             System.err.println("Error cargando configuración. Usando valores por defecto. Detalle: "
                     + e.getMessage());
@@ -47,6 +67,9 @@ public class Configuracion {
         valores.add(String.valueOf(maxLabs));
         valores.add(ip);
         valores.add(port);
+        valores.add(inproc);
+        valores.add(ipHealthcheck);
+        valores.add(portHealthcheck);
 
         return valores;
     }

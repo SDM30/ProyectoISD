@@ -2,9 +2,11 @@ package org.grupo4;
 
 import org.grupo4.redes.ManejadorHealthCheck;
 import org.grupo4.redes.ServidorCentral;
+import org.grupo4.repositorio.Configuracion;
 import org.zeromq.ZContext;
 
 import java.io.InputStream;
+import java.util.List;
 
 public class MainServidorCentral {
     // Valores por defecto
@@ -20,62 +22,77 @@ public class MainServidorCentral {
 
     public static void main(String[] args) {
         ServidorCentral servidor;
+        String healthcheckIp;
+        String healthcheckPort;
 
-        if (args.length > 0) {
+        if (args.length == 0) {
+            // Usar configuración por defecto desde archivo
+            List<String> config = Configuracion.cargarConfiguracionServidor(null);
+            healthcheckIp = config.get(5);
+            healthcheckPort = config.get(6);
+            servidor = new ServidorCentral(config.get(2), config.get(3), config.get(4),
+                    Integer.parseInt(config.get(0)), Integer.parseInt(config.get(1)));
+            System.out.println("Usando archivo de configuración por defecto");
+        } else if (args.length == 1) {
+            if (args[0].equals("-h") || args[0].equals("--help")) {
+                imprimirAyuda();
+                return;
+            }
             // Usar archivo de propiedades proporcionado
+            List<String> config = Configuracion.cargarConfiguracionServidor(args[0]);
+            healthcheckIp = config.get(5);
+            healthcheckPort = config.get(6);
             servidor = new ServidorCentral(args[0]);
+        } else if (args.length == 7) {
+            try {
+                int maxSalones = Integer.parseInt(args[0]);
+                int maxLabs = Integer.parseInt(args[1]);
+                String ip = args[2];
+                String port = args[3];
+                String inproc = args[4];
+                healthcheckIp = args[5];
+                healthcheckPort = args[6];
+
+                servidor = new ServidorCentral(ip, port, inproc, maxSalones, maxLabs);
+                System.out.println("Configuración cargada desde argumentos:");
+                System.out.println("Max salones: " + maxSalones);
+                System.out.println("Max laboratorios: " + maxLabs);
+                System.out.println("IP: " + ip);
+                System.out.println("Puerto: " + port);
+                System.out.println("Inproc: " + inproc);
+                System.out.println("Healthcheck IP: " + healthcheckIp);
+                System.out.println("Healthcheck Puerto: " + healthcheckPort);
+            } catch (NumberFormatException e) {
+                System.err.println("Error: Los argumentos numéricos no son válidos");
+                imprimirAyuda();
+                return;
+            }
         } else {
-            // Cargar configuración por defecto
-            servidor = crearServidorConConfigPorDefecto();
+            System.err.println("Error: Número de argumentos incorrecto");
+            imprimirAyuda();
+            return;
         }
 
         // Inicializar contexto compartido
         ZContext context = new ZContext();
 
-        // responder a healthcheck
-        new Thread(new ManejadorHealthCheck(
-                context,
-                DEFAULT_HEALTHCHECK_IP,
-                DEFAULT_HEALTHCHECK_PORT
-        )).start();
+        // Responder a healthcheck
+        new Thread(new ManejadorHealthCheck(context, healthcheckIp, healthcheckPort)).start();
 
         // Atender peticiones
         servidor.loadBalancingBroker(context);
 
-        //Manejar interrupcion
-        Runtime.getRuntime().addShutdownHook(
-            new Thread(
-                () -> {
-                    servidor.imprimirMetricas();
-                }
-            )
-        );
+        Runtime.getRuntime().addShutdownHook(new Thread(servidor::imprimirMetricas));
     }
 
-    private static ServidorCentral crearServidorConConfigPorDefecto() {
-        try {
-            // Intentar cargar config.properties desde recursos
-            InputStream input = MainServidorCentral.class.getResourceAsStream("/configServidor.properties");
-            if (input != null) {
-                return new ServidorCentral("configServidor.properties");
-            }
-        } catch (Exception e) {
-            System.err.println("Error cargando config predeterminada: " + e.getMessage());
-        }
-
-        // Valores quemados en código
-        System.out.println("Usando configuración por defecto:");
-        System.out.println("Max salones: " + DEFAULT_MAX_SALONES);
-        System.out.println("Max laboratorios: " + DEFAULT_MAX_LABS);
-        System.out.println("IP: " + DEFAULT_IP);
-        System.out.println("Puerto: " + DEFAULT_PORT);
-
-        return new ServidorCentral(
-                DEFAULT_IP,
-                DEFAULT_PORT,
-                DEFAULT_INPROC,
-                DEFAULT_MAX_SALONES,
-                DEFAULT_MAX_LABS
-        );
+    private static void imprimirAyuda() {
+        System.out.println("Uso del servidor:");
+        System.out.println("1. Con archivo de configuración:");
+        System.out.println("   java -jar servidor.jar <ruta-archivo.properties>");
+        System.out.println("\n2. Con argumentos por línea de comandos:");
+        System.out.println("   java -jar servidor.jar <max_salones> <max_labs> <ip_servidor> <puerto> <inproc> <healthcheck_ip> <healthcheck_puerto>");
+        System.out.println("\nEjemplos:");
+        System.out.println("   java -jar servidor.jar config.properties");
+        System.out.println("   java -jar servidor.jar 380 60 0.0.0.0 5555 backend 0.0.0.0 5554");
     }
 }
