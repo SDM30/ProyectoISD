@@ -19,6 +19,7 @@ public class ServidorCentral {
     private String inproc;
     private int maxSalones;
     private int maxLabs;
+    private int aulasMoviles;
 
     private final List<Long> tiemposRespuesta = new ArrayList<>();
     private int numSolicitudesAtendidas = 0;
@@ -31,7 +32,7 @@ public class ServidorCentral {
         List<String> configuraciones = Configuracion.cargarConfiguracionServidor(rutaConfig);
         this.maxSalones = Integer.parseInt(configuraciones.get(0));
         this.maxLabs = Integer.parseInt(configuraciones.get(1));
-        int aulasMoviles = Integer.parseInt(configuraciones.get(9));
+        this.aulasMoviles = Integer.parseInt(configuraciones.get(9));
         this.ip = configuraciones.get(2);
         this.port = configuraciones.get(3);
         this.inproc = configuraciones.size() > 4 ? configuraciones.get(4) : "backend";
@@ -46,6 +47,7 @@ public class ServidorCentral {
         this.inproc = inproc;
         this.maxSalones = maxSalones;
         this.maxLabs = maxLabs;
+        this.aulasMoviles = aulasMoviles;
 
         // Inicializar el administrador de instalaciones
         AdministradorInstalaciones.getInstance(maxSalones, maxLabs, aulasMoviles);
