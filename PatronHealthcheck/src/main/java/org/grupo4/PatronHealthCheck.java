@@ -11,8 +11,10 @@ public class PatronHealthCheck {
     private static final String DEFAULT_IP = "0.0.0.0";
     private static final String DEFAULT_PORT = "5554";
     private static final String DEFAULT_PORT_PUBLISHER = "5553";
-    private static String PORT_BACKUP = "5552";
-    private static final String USAGE = "Uso: java PatronHealthCheck <ip> <puerto> <backup_ip> <puerto_publicador>";
+    private static String PORT_TO_BACKUP = "5552";
+    private static String PORT_BACKUP = "5565";
+    private static final String USAGE =
+            "Uso: java PatronHealthCheck <ip> <puerto> <backup_ip> <puerto_publicador> <puerto_backup>";
     private static String BACKUP_IP = "127.0.0.1";
     private static final int REQUEST_TIMEOUT = 2500;
     private static final int REQUEST_RETRIES = 3;
@@ -93,8 +95,8 @@ public class PatronHealthCheck {
 
     private static void sendBackupIP(Socket publisher) {
         String topic = "BACKUP";
-        String message = topic + " " + BACKUP_IP;
-        if (DEBUG) System.out.println("[HEALTHCHECK] Publicado BACKUP IP: " + BACKUP_IP);
+        String message = topic + " " + BACKUP_IP + " " + PORT_BACKUP;
+        if (DEBUG) System.out.println("[HEALTHCHECK] Publicado BACKUP IP y Puerto: " + BACKUP_IP + ":" + PORT_BACKUP);
         publisher.send(message.getBytes(ZMQ.CHARSET), 0);
     }
 
@@ -132,7 +134,7 @@ public class PatronHealthCheck {
     }
 
     private static String getBackupConnectionString() {
-        return "tcp://" + BACKUP_IP + ":" + PORT_BACKUP;
+        return "tcp://" + BACKUP_IP + ":" + PORT_TO_BACKUP;
     }
 
     /**
@@ -140,23 +142,26 @@ public class PatronHealthCheck {
      * @param args Argumentos de la línea de comandos.
      * @return Cadena de conexión en formato "tcp://ip:puerto".
      */
-    private static String interpreteArgs(String[] args){
+    private static String interpreteArgs(String[] args) {
         String conexion = "tcp://" + DEFAULT_IP + ":" + DEFAULT_PORT;
-        if (args.length == 5) {
+        if (args.length == 6) {
             String ip = args[1];
             String port = args[2];
             String backupIp = args[3];
             String pubPort = args[4];
+            String backupPort = args[5];
             if (ip != null && !ip.isEmpty() && port != null && !port.isEmpty() &&
-                    backupIp != null && !backupIp.isEmpty() && pubPort != null && !pubPort.isEmpty()) {
+                    backupIp != null && !backupIp.isEmpty() && pubPort != null && !pubPort.isEmpty() &&
+                    backupPort != null && !backupPort.isEmpty()) {
                 conexion = "tcp://" + ip + ":" + port;
                 BACKUP_IP = backupIp;
-                PORT_BACKUP = pubPort;
+                PORT_TO_BACKUP = pubPort;
+                PORT_BACKUP = backupPort;
             } else {
-                System.out.println("Error: IP, puerto, backup_ip o puerto_publicador no válidos.");
+                System.out.println("Error: IP, puerto, backup_ip, puerto_publicador o puerto_backup no válidos.");
                 System.out.println(USAGE);
             }
-        } else if (args.length > 5) {
+        } else if (args.length > 6) {
             System.out.println("Error: Demasiados argumentos.");
         }
         return conexion;

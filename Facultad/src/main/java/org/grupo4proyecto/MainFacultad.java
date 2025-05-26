@@ -45,6 +45,8 @@ public class MainFacultad {
             facultad.iniciarSuscriptor(context, facultad);
 
             try (ClienteFacultad clienteFacultad = new ClienteFacultad(facultad, context)) {
+                // Registrar el ClienteFacultad como listener
+                facultad.getSuscriptor().setIpChangeListener(clienteFacultad);
 
                 for (int i = 0; i < solicitudes.size(); i++) {
                     long inicio = System.nanoTime();
@@ -56,6 +58,7 @@ public class MainFacultad {
                     if (res == null) {
                         System.out.println("[CLIENTE] No se recibió respuesta del servidor.");
                         solicitudesNoAtendidas++;
+                        clienteFacultad.getSolicitudesPendientes().add(solicitudes.get(i));
                         continue;
                     }
 
@@ -70,6 +73,10 @@ public class MainFacultad {
                     facultad.getProgramas().get(i).setNumLabs(res.getLabsAsignados());
                     solicitudesAtendidas++;
                 }
+                // Opcional: Imprimir pendientes o realizar reintentos.
+                System.out.println("[CLIENTE] Solicitudes pendientes locales: " + clienteFacultad.getSolicitudesPendientes().size());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
             System.out.println("Press ENTER to terminate...");
@@ -81,8 +88,6 @@ public class MainFacultad {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
 
             if (!tiemposRespuesta.isEmpty()) {
                 long min = Collections.min(tiemposRespuesta);
@@ -158,7 +163,7 @@ public class MainFacultad {
                Ejemplo completo:
                java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 192.168.1.101 5553 2 misProgramas.txt
         
-            3. Parámetros mínimos requeridos:
+            3. Par��metros mínimos requeridos:
                java -jar Facultad.jar <nombre> <ip> <puerto> <ip_healthcheck> <puerto_healthcheck>
         
                Ejemplo:

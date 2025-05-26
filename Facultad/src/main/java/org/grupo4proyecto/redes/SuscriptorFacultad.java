@@ -11,10 +11,15 @@ public class SuscriptorFacultad {
     private String IP_HEALTHCHECK = "0.0.0.0";
     private String PUERTO_HEALTHCHECK = "5553";
     private volatile boolean activo = true;
+    private IPChangeListener ipChangeListener;
 
     public SuscriptorFacultad(String ip, String puerto) {
         this.IP_HEALTHCHECK = ip;
         this.PUERTO_HEALTHCHECK = puerto;
+    }
+
+    public void setIpChangeListener(IPChangeListener listener) {
+        this.ipChangeListener = listener;
     }
 
     public void recibirMensajes(ZContext context, Facultad facultad) {
@@ -35,12 +40,18 @@ public class SuscriptorFacultad {
                 System.out.println("[SUBSCRIBER] Mensaje recibido: " + mensajeStr);
 
                 String[] partes = mensajeStr.split(" ");
-                if (partes.length == 2 && "BACKUP".equals(partes[0])) {
+                if (partes.length == 3 && "BACKUP".equals(partes[0])) {
                     String backupIp = partes[1];
+                    String port = partes[2];
                     System.out.println("IP del servidor replica: " + backupIp);
+                    System.out.println("Puerto del servidor replica: " + port);
+                    facultad.setDirServidorCentral(InetAddress.getByName(backupIp));
+                    facultad.setPuertoServidorCentral(port.isEmpty() ? 0 : Integer.parseInt(port));
+                    
+                    if (ipChangeListener != null) {
+                        ipChangeListener.onIPChanged(backupIp, port, context);
+                    }
                 }
-
-                facultad.setDirServidorCentral(InetAddress.getByName(partes[1]));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -52,7 +63,6 @@ public class SuscriptorFacultad {
     public void detener() {
         activo = false;
     }
-
 
     public void setIpHealthcheck(String ipHealthcheck) {
         IP_HEALTHCHECK = ipHealthcheck;
