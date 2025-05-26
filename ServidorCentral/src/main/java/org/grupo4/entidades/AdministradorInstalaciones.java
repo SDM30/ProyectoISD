@@ -15,21 +15,15 @@ public class AdministradorInstalaciones {
     private final ContadorAtomico labs;
     private final ContadorAtomico aulasMoviles;
 
-    // Valores maximos parametrizables
-    public AdministradorInstalaciones() {
-        List<String> valores = cargarConfiguracionServidor(null);
-
-        int maxSalones = Integer.parseInt(valores.get(0));
-        int maxLabs = Integer.parseInt(valores.get(1));
-
-        this.salones = new ContadorAtomico(maxSalones);
-        this.labs = new ContadorAtomico(maxLabs);
-        this.aulasMoviles = new ContadorAtomico(0);
-    }
-
     public AdministradorInstalaciones(int salones, int labs) {
         this.salones = new ContadorAtomico(salones);
         this.labs = new ContadorAtomico(labs);
+        this.aulasMoviles = new ContadorAtomico(0);
+    }
+
+    public AdministradorInstalaciones() {
+        this.salones = new ContadorAtomico(0);
+        this.labs = new ContadorAtomico(0);
         this.aulasMoviles = new ContadorAtomico(0);
     }
 

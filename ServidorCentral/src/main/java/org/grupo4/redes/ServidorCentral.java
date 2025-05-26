@@ -32,7 +32,7 @@ public class ServidorCentral {
         this.port = configuraciones.get(3);
         this.inproc = configuraciones.size() > 4 ? configuraciones.get(4) : "backend";
 
-        // Inicializar el administrador de instalaciones con los valores de configuración
+        // Inicializar el administrador de instalaciones
         AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
     }
 
@@ -42,6 +42,9 @@ public class ServidorCentral {
         this.inproc = inproc;
         this.maxSalones = maxSalones;
         this.maxLabs = maxLabs;
+
+        // Inicializar el administrador de instalaciones
+        AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
     }
 
     /**
