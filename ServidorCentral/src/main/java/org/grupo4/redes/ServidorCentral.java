@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.grupo4.entidades.AdministradorInstalaciones;
 import org.grupo4.entidades.Solicitud;
+import org.grupo4.repositorio.ConectorCassandra;
 import org.grupo4.repositorio.Configuracion;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -53,6 +54,7 @@ public class ServidorCentral {
      * Método principal del broker que gestiona el balanceo de carga entre los trabajadores
      */
     public void loadBalancingBroker(ZContext context) {
+
         try (context) {
             // Inicializar sockets
             Socket frontend = inicializarSocketFrontend(context);
@@ -342,6 +344,7 @@ public class ServidorCentral {
             solicitudesNoAtendidas.remove(atendida);
             solicitudesAtendidas.add(atendida);
             System.out.println("[PERSISTENCIA] Solicitud atendida registrada y movida a la lista de atendidas: " + atendida);
+            ConectorCassandra.moverSolicitudAAtendidas(atendida);
         } else {
             System.err.println("[PERSISTENCIA] No se encontró la solicitud correspondiente en la lista de no atendidas.");
         }
@@ -349,6 +352,7 @@ public class ServidorCentral {
 
     private void registrarSolicitudNoAtendida(Solicitud solicitud) {
         solicitudesNoAtendidas.add(solicitud);
+        ConectorCassandra.insertarSolicitudPendiente(solicitud);
         System.out.println("[PERSISTENCIA] Solicitud no atendida registrada: " + solicitud);
     }
 }

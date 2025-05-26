@@ -58,11 +58,11 @@ public class Solicitud {
         this.numLaboratorios = numLaboratorios;
     }
 
-    public String getUuid() { // Cambiado de getUUID a getUuid
+    public String getUuid() {
         return uuid;
     }
 
-    public void setUuid(String uuid) { // Agregado setter
+    public void setUuid(String uuid) {
         this.uuid = uuid;
     }
 

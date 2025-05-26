@@ -81,7 +81,21 @@ public class MainServidorCentral {
         new Thread(new ManejadorHealthCheck(context, healthcheckIp, healthcheckPort)).start();
 
         // Atender peticiones
-        servidor.loadBalancingBroker(context);
+        try {
+            if (ConectorCassandra.conectar()) {
+                System.out.println("[CASSANDRA] Conexión establecida exitosamente");
+                servidor.loadBalancingBroker(context);
+            } else {
+                System.err.println("[CASSANDRA] No se pudo establecer la conexión. El servidor no iniciará.");
+                context.close();
+                return;
+            }
+        } catch (Exception e) {
+            System.err.println("[CASSANDRA] Error al conectar: " + e.getMessage());
+            System.err.println("[SERVIDOR] No se iniciará el servidor debido al error de conexión");
+            context.close();
+            return;
+        }
 
         Runtime.getRuntime().addShutdownHook(new Thread(servidor::imprimirMetricas));
 

@@ -1,31 +1,120 @@
 package org.grupo4.repositorio;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import org.grupo4.entidades.Solicitud;
 
 import java.net.InetSocketAddress;
 
 public class ConectorCassandra {
-    public static void conectar() {
-        // Construye el CqlSession apuntando a localhost:9042 (nodo1)
-        try (CqlSession session = CqlSession.builder()
-                // Contact point: IP y puerto del nodo1 expuesto en el host
-                .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
-                // DataCenter que definiste en la configuración (CASSANDRA_DC)
-                .withLocalDatacenter("datacenter1")
-                .build()) {
+    private static CqlSession session;
 
-            // Si la conexión fue exitosa, imprime el nombre del cluster
+    public static boolean conectar() {
+        try {
+            session = CqlSession.builder()
+                    .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
+                    .withLocalDatacenter("datacenter1")
+                    .build();
+
+            crearEsquema();
+
             String clusterName = session.getMetadata()
                     .getClusterName()
                     .orElse("Desconocido");
-            System.out.println("Conectado al cluster: " + clusterName);
+            System.out.println("[CASSANDRA] Conectado al cluster: " + clusterName);
+            return session != null && !session.isClosed();
 
-            // Ejemplo de consulta simple
-            session.execute("SELECT release_version FROM system.local")
-                    .forEach(row -> System.out.println("Versión Cassandra: "
-                            + row.getString("release_version")));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[CASSANDRA] Error de conexión: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private static void crearEsquema() {
+        session.execute("CREATE KEYSPACE IF NOT EXISTS servidor_central " +
+                "WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}");
+
+        session.execute("CREATE TABLE IF NOT EXISTS servidor_central.solicitudes_pendientes (" +
+                "uuid text PRIMARY KEY, " +
+                "facultad text, " +
+                "programa text, " +
+                "semestre int, " +
+                "num_salones int, " +
+                "num_laboratorios int)");
+
+        session.execute("CREATE TABLE IF NOT EXISTS servidor_central.solicitudes_atendidas (" +
+                "uuid text PRIMARY KEY, " +
+                "facultad text, " +
+                "programa text, " +
+                "semestre int, " +
+                "num_salones int, " +
+                "num_laboratorios int)");
+    }
+
+    public static void insertarSolicitudPendiente(Solicitud solicitud) {
+        try {
+            PreparedStatement pstmt = session.prepare(
+                "INSERT INTO servidor_central.solicitudes_pendientes " +
+                "(uuid, facultad, programa, semestre, num_salones, num_laboratorios) " +
+                "VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
+            BoundStatement bound = pstmt.bind(
+                solicitud.getUuid(),
+                solicitud.getFacultad(),
+                solicitud.getPrograma(),
+                solicitud.getSemestre(),
+                solicitud.getNumSalones(),
+                solicitud.getNumLaboratorios()
+            ).setConsistencyLevel(ConsistencyLevel.ONE);
+
+            session.execute(bound);
+            System.out.println("[CASSANDRA] Solicitud pendiente insertada: " + solicitud.getUuid());
+        } catch (Exception e) {
+            System.err.println("[CASSANDRA] Error al insertar solicitud pendiente: " + e.getMessage());
+        }
+    }
+
+    public static void moverSolicitudAAtendidas(Solicitud solicitud) {
+        try {
+            PreparedStatement insertPstmt = session.prepare(
+                "INSERT INTO servidor_central.solicitudes_atendidas " +
+                "(uuid, facultad, programa, semestre, num_salones, num_laboratorios) " +
+                "VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
+            BoundStatement boundInsert = insertPstmt.bind(
+                solicitud.getUuid(),
+                solicitud.getFacultad(),
+                solicitud.getPrograma(),
+                solicitud.getSemestre(),
+                solicitud.getNumSalones(),
+                solicitud.getNumLaboratorios()
+            ).setConsistencyLevel(ConsistencyLevel.ONE);
+
+            PreparedStatement deletePstmt = session.prepare(
+                "DELETE FROM servidor_central.solicitudes_pendientes WHERE uuid = ?"
+            );
+
+            BoundStatement boundDelete = deletePstmt.bind(solicitud.getUuid())
+                .setConsistencyLevel(ConsistencyLevel.ONE);
+
+            session.execute(boundInsert);
+            session.execute(boundDelete);
+
+            System.out.println("[CASSANDRA] Solicitud movida a atendidas: " + solicitud.getUuid());
+        } catch (Exception e) {
+            System.err.println("[CASSANDRA] Error al mover solicitud a atendidas: " + e.getMessage());
+        }
+    }
+
+    public static void cerrar() {
+        if (session != null && !session.isClosed()) {
+            session.close();
+            System.out.println("[CASSANDRA] Conexión cerrada");
         }
     }
 }
