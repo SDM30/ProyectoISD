@@ -25,12 +25,16 @@ public class MainServidorCentral {
         ServidorCentral servidor;
         String healthcheckIp;
         String healthcheckPort;
+        String cassandraIp;
+        int cassandraPort;
 
         if (args.length == 0) {
             // Usar configuración por defecto desde archivo
             List<String> config = Configuracion.cargarConfiguracionServidor(null);
             healthcheckIp = config.get(5);
             healthcheckPort = config.get(6);
+            cassandraIp = config.get(7);
+            cassandraPort = Integer.parseInt(config.get(8));
             servidor = new ServidorCentral(config.get(2), config.get(3), config.get(4),
                     Integer.parseInt(config.get(0)), Integer.parseInt(config.get(1)));
             System.out.println("Usando archivo de configuración por defecto");
@@ -43,8 +47,10 @@ public class MainServidorCentral {
             List<String> config = Configuracion.cargarConfiguracionServidor(args[0]);
             healthcheckIp = config.get(5);
             healthcheckPort = config.get(6);
+            cassandraIp = config.get(7);
+            cassandraPort = Integer.parseInt(config.get(8));
             servidor = new ServidorCentral(args[0]);
-        } else if (args.length == 7) {
+        } else if (args.length == 9) {
             try {
                 int maxSalones = Integer.parseInt(args[0]);
                 int maxLabs = Integer.parseInt(args[1]);
@@ -53,6 +59,8 @@ public class MainServidorCentral {
                 String inproc = args[4];
                 healthcheckIp = args[5];
                 healthcheckPort = args[6];
+                cassandraIp = args[7];
+                cassandraPort = Integer.parseInt(args[8]);
 
                 servidor = new ServidorCentral(ip, port, inproc, maxSalones, maxLabs);
                 System.out.println("Configuración cargada desde argumentos:");
@@ -63,6 +71,8 @@ public class MainServidorCentral {
                 System.out.println("Inproc: " + inproc);
                 System.out.println("Healthcheck IP: " + healthcheckIp);
                 System.out.println("Healthcheck Puerto: " + healthcheckPort);
+                System.out.println("Cassandra IP: " + cassandraIp);
+                System.out.println("Cassandra Puerto: " + cassandraPort);
             } catch (NumberFormatException e) {
                 System.err.println("Error: Los argumentos numéricos no son válidos");
                 imprimirAyuda();
@@ -82,7 +92,7 @@ public class MainServidorCentral {
 
         // Atender peticiones
         try {
-            if (ConectorCassandra.conectar()) {
+            if (ConectorCassandra.conectar(cassandraIp, cassandraPort)) {
                 System.out.println("[CASSANDRA] Conexión establecida exitosamente");
                 servidor.loadBalancingBroker(context);
             } else {
@@ -98,8 +108,6 @@ public class MainServidorCentral {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(servidor::imprimirMetricas));
-
-/*        ConectorCassandra.conectar();*/
     }
 
     private static void imprimirAyuda() {
@@ -107,9 +115,9 @@ public class MainServidorCentral {
         System.out.println("1. Con archivo de configuración:");
         System.out.println("   java -jar servidor.jar <ruta-archivo.properties>");
         System.out.println("\n2. Con argumentos por línea de comandos:");
-        System.out.println("   java -jar servidor.jar <max_salones> <max_labs> <ip_servidor> <puerto> <inproc> <healthcheck_ip> <healthcheck_puerto>");
+        System.out.println("   java -jar servidor.jar <max_salones> <max_labs> <ip_servidor> <puerto> <inproc> <healthcheck_ip> <healthcheck_puerto> <cassandra_ip> <cassandra_puerto>");
         System.out.println("\nEjemplos:");
         System.out.println("   java -jar servidor.jar config.properties");
-        System.out.println("   java -jar servidor.jar 380 60 0.0.0.0 5555 backend 0.0.0.0 5554");
+        System.out.println("   java -jar servidor.jar 380 60 0.0.0.0 5555 backend 0.0.0.0 5554 localhost 9042");
     }
 }

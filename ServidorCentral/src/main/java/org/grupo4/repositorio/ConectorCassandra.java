@@ -12,10 +12,10 @@ import java.net.InetSocketAddress;
 public class ConectorCassandra {
     private static CqlSession session;
 
-    public static boolean conectar() {
+    public static boolean conectar(String ip, int port) {
         try {
             session = CqlSession.builder()
-                    .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
+                    .addContactPoint(new InetSocketAddress(ip, port))
                     .withLocalDatacenter("datacenter1")
                     .build();
 
