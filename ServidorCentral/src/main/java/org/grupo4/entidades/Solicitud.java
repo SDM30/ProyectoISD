@@ -1,13 +1,14 @@
 package org.grupo4.entidades;
 
 public class Solicitud {
+    private String uuid;
     private String facultad;
     private String programa;
     private int semestre;
     private int numSalones;
     private int numLaboratorios;
 
-    public Solicitud (String facultad, String programa, int semestre, int numSalones, int numLaboratorios) {
+    public Solicitud(String facultad, String programa, int semestre, int numSalones, int numLaboratorios) {
         this.facultad = facultad;
         this.programa = programa;
         this.semestre = semestre;
@@ -57,10 +58,19 @@ public class Solicitud {
         this.numLaboratorios = numLaboratorios;
     }
 
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
     @Override
-    public String toString () {
+    public String toString() {
         return "Solicitud{" +
-                "facultad='" + facultad + '\'' +
+                "uuid='" + uuid + '\'' +
+                ", facultad='" + facultad + '\'' +
                 ", programa='" + programa + '\'' +
                 ", semestre=" + semestre +
                 ", numSalones=" + numSalones +
