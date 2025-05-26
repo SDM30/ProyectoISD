@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Primer nodo de Cassandra
+  cassandra-node1:
+    image: cassandra:latest         
+    container_name: cassandra-node1  
+    ports:
+      - "9042:9042"                  
+    environment:
+      - CASSANDRA_CLUSTER_NAME=CassandraCluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - JVM_OPTS=-Xms384m -Xmx768m
+      - MAX_HEAP_SIZE=768M
+      - HEAP_NEWSIZE=200M
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 768M
+    networks:
+      - cassandra-network
+    volumes:
+      - ./node1_data:/var/lib/cassandra/data
+
+  # Segundo nodo de Cassandra
+  cassandra-node2:
+    image: cassandra:latest
+    container_name: cassandra-node2
+    ports:
+      - "9043:9042"                  
+    environment:
+      - CASSANDRA_CLUSTER_NAME=CassandraCluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_SEEDS=cassandra-node1
+      - JVM_OPTS=-Xms384m -Xmx768m
+      - MAX_HEAP_SIZE=768M
+      - HEAP_NEWSIZE=200M
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 768M
+    depends_on:
+      - cassandra-node1
+    networks:
+      - cassandra-network
+    volumes:
+      - ./node2_data:/var/lib/cassandra/data
+
+networks:
+  cassandra-network:
+    driver: bridge

@@ -2,6 +2,7 @@ package org.grupo4;
 
 import org.grupo4.redes.ManejadorHealthCheck;
 import org.grupo4.redes.ServidorCentral;
+import org.grupo4.repositorio.ConectorCassandra;
 import org.grupo4.repositorio.Configuracion;
 import org.zeromq.ZContext;
 
@@ -83,6 +84,8 @@ public class MainServidorCentral {
         servidor.loadBalancingBroker(context);
 
         Runtime.getRuntime().addShutdownHook(new Thread(servidor::imprimirMetricas));
+
+/*        ConectorCassandra.conectar();*/
     }
 
     private static void imprimirAyuda() {

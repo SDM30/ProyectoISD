@@ -20,8 +20,10 @@ public class ServidorCentral {
     private int maxLabs;
 
     private final List<Long> tiemposRespuesta = new ArrayList<>();
-    private int solicitudesAtendidas = 0;
-    private int solicitudesNoAtendidas = 0;
+    private int numSolicitudesAtendidas = 0;
+    private int numSolicitudesNoAtendidas = 0;
+    private List<Solicitud> solicitudesNoAtendidas = new ArrayList<>();
+    private List<Solicitud> solicitudesAtendidas = new ArrayList<>();
 
 
     public ServidorCentral(String rutaConfig) {
@@ -80,9 +82,16 @@ public class ServidorCentral {
         Socket frontend = context.createSocket(SocketType.ROUTER);
         String endpoint = "tcp://" + ip + ":" + port;
 
-        frontend.bind(endpoint);
-        System.out.println("[BROKER] Iniciado en " + endpoint);
-        return frontend;
+        try {
+            frontend.bind(endpoint);
+            System.out.println("\n[BROKER] Socket frontend iniciado exitosamente");
+            System.out.println("[BROKER] Escuchando en: " + endpoint);
+            System.out.println("[BROKER] Estado inicial de recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
+            return frontend;
+        } catch (Exception e) {
+            System.err.println("[BROKER] Error fatal al inicializar socket frontend: " + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -91,8 +100,15 @@ public class ServidorCentral {
     private Socket inicializarSocketBackend(ZContext context) {
         Socket backend = context.createSocket(SocketType.ROUTER);
         String inprocEndpoint = "inproc://" + inproc;
-        backend.bind(inprocEndpoint);
-        return backend;
+
+        try {
+            backend.bind(inprocEndpoint);
+            System.out.println("[BROKER] Socket backend iniciado en: " + inprocEndpoint);
+            return backend;
+        } catch (Exception e) {
+            System.err.println("[BROKER] Error fatal al inicializar socket backend: " + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -139,8 +155,8 @@ public class ServidorCentral {
 
         if (!workerQueue.isEmpty()) {
             poller.register(frontend, Poller.POLLIN);
-            System.out.println("[BROKER] Trabajadores disponibles: " + workerQueue.size());
-            System.out.println("[BROKER] Estado recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
+            //System.out.println("[BROKER] Trabajadores disponibles: " + workerQueue.size());
+            //System.out.println("[BROKER] Estado recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
         }
 
         return poller;
@@ -180,11 +196,16 @@ public class ServidorCentral {
      * Maneja los mensajes provenientes de los clientes
      */
     private void manejarMensajesClientes(Socket frontend, Socket backend, Queue<String> workerQueue) {
-        String clientAddr = frontend.recvStr();
-        frontend.recv(); // Frame vacío
-        String request = frontend.recvStr();
+        try {
+            String clientAddr = frontend.recvStr();
+            frontend.recv(); // Frame vacío
+            String request = frontend.recvStr();
 
-        procesarSolicitudCliente(clientAddr, request, backend, frontend, workerQueue);
+            System.out.println("[BROKER] Nueva solicitud recibida de: " + clientAddr);
+            procesarSolicitudCliente(clientAddr, request, backend, frontend, workerQueue);
+        } catch (Exception e) {
+            System.err.println("[BROKER] Error procesando mensaje del cliente: " + e.getMessage());
+        }
     }
 
     /**
@@ -206,6 +227,7 @@ public class ServidorCentral {
             try {
                 ConfirmacionAsignacion confirmacion = mapper.readValue(requestJson, ConfirmacionAsignacion.class);
                 procesarConfirmacion(clientAddr, confirmacion, frontend);
+                registrarSolicitudAtendida(confirmacion.getResEnvio());
                 return;
             } catch (JsonProcessingException e) {
                 System.out.println("[DEBUG] No es mensaje de confirmación: " + e.getMessage());
@@ -217,7 +239,10 @@ public class ServidorCentral {
                 Solicitud solicitud = mapper.readValue(requestJson, Solicitud.class);
                 enviarSolicitudATrabajador(clientAddr, requestJson, backend, workerQueue);
                 long fin = System.nanoTime();
+
+                registrarSolicitudNoAtendida(solicitud);
                 registrarTiempoRespuesta(inicio, fin, true);
+
                 return;
 
             } catch (JsonProcessingException e) {
@@ -275,9 +300,9 @@ public class ServidorCentral {
         tiemposRespuesta.add(duracion);
 
         if (atendida) {
-            solicitudesAtendidas++;
+            numSolicitudesAtendidas++;
         } else {
-            solicitudesNoAtendidas++;
+            numSolicitudesNoAtendidas++;
         }
     }
 
@@ -292,11 +317,42 @@ public class ServidorCentral {
         double promedio = tiemposRespuesta.stream().mapToLong(Long::longValue).average().orElse(0.0);
 
         System.out.println("\n--- MÉTRICAS DE DESEMPEÑO DEL SERVIDOR CENTRAL ---");
-        System.out.println("Solicitudes atendidas: " + solicitudesAtendidas);
-        System.out.println("Solicitudes no atendidas: " + solicitudesNoAtendidas);
+        System.out.println("Solicitudes atendidas: " + numSolicitudesAtendidas);
+        System.out.println("Solicitudes no atendidas: " + numSolicitudesNoAtendidas);
         System.out.printf("Tiempo mínimo de atención: %.2f ms%n", min / 1_000_000.0);
         System.out.printf("Tiempo máximo de atención: %.2f ms%n", max / 1_000_000.0);
         System.out.printf("Tiempo promedio de atención: %.2f ms%n", promedio / 1_000_000.0);
     }
 
+    private void registrarSolicitudAtendida(ResultadoEnvio resultadoEnvio) {
+        String[] facultadProgramaSplit = resultadoEnvio.getFacultadPrograma().split("-");
+        Solicitud atendida = null;
+
+        // Buscar la solicitud que coincida en la lista de no atendidas
+        for (Solicitud solicitud : solicitudesNoAtendidas) {
+            if (solicitud.getNumSalones() == resultadoEnvio.getSalonesAsignados() &&
+                    solicitud.getNumLaboratorios() == resultadoEnvio.getAulaMovilAsignadas() &&
+                    solicitud.getFacultad().equals(facultadProgramaSplit[0]) &&
+                    solicitud.getPrograma().equals(facultadProgramaSplit[1])) {
+                solicitudesAtendidas.add(solicitud);
+                atendida = solicitud;
+                System.out.println("[PERSISTENCIA] Solicitud atendida registrada: " + atendida);
+                break;
+            }
+        }
+
+        if (atendida != null) {
+            // Mover la solicitud de no atendidas a atendidas
+            solicitudesNoAtendidas.remove(atendida);
+            solicitudesAtendidas.add(atendida);
+            System.out.println("[PERSISTENCIA] Solicitud atendida registrada y movida a la lista de atendidas: " + atendida);
+        } else {
+            System.err.println("[PERSISTENCIA] No se encontró la solicitud correspondiente en la lista de no atendidas.");
+        }
+    }
+
+    private void registrarSolicitudNoAtendida(Solicitud solicitud) {
+        solicitudesNoAtendidas.add(solicitud);
+        System.out.println("[PERSISTENCIA] Solicitud no atendida registrada: " + solicitud);
+    }
 }
