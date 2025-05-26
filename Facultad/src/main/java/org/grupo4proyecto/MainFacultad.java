@@ -1,10 +1,10 @@
 package org.grupo4proyecto;
 
-
 import org.grupo4proyecto.entidades.Facultad;
 import org.grupo4proyecto.entidades.Solicitud;
 import org.grupo4proyecto.redes.ClienteFacultad;
 import org.grupo4proyecto.redes.ResultadoEnvio;
+import org.grupo4proyecto.redes.ServidorFacultad;
 import org.grupo4proyecto.repositorio.ContenedorDatos;
 import org.grupo4proyecto.repositorio.RepositorioPrograma;
 
@@ -27,8 +27,7 @@ public class MainFacultad {
         int solicitudesAtendidas = 0;
         int solicitudesNoAtendidas = 0;
 
-
-        if (interpreteArgumentos (args, datos)) {
+        if (interpreteArgumentos(args, datos)) {
 
             if (datos.solicitudes.isEmpty()) {
                 cargarSolicitudesEmergencia(datos);
@@ -38,38 +37,40 @@ public class MainFacultad {
             List<Solicitud> solicitudes = datos.solicitudes;
             ResultadoEnvio res = null;
 
-            System.out.println (facultad.toString());
-            System.out.println (solicitudes.toString());
+            System.out.println(facultad.toString());
+            System.out.println(solicitudes.toString());
 
             Scanner scanner = new Scanner(System.in);
 
+            try (ClienteFacultad clienteFacultad = new ClienteFacultad(facultad)) {
+                // Lanzar servidor para recibir solicitudes de programas académicos
+                new Thread(new ServidorFacultad(facultad)).start();
+                System.out.println("[FACULTAD] Servidor para programas iniciado en puerto " + facultad.getPuertoParaProgramas());
 
-            try (ClienteFacultad clienteFacultad = new ClienteFacultad(datos.facultad)) {
                 long inicio = System.nanoTime();
                 res = clienteFacultad.enviarSolicitudServidor(solicitudes.get(0));
                 long fin = System.nanoTime();
                 long duracion = fin - inicio;
                 tiemposRespuesta.add(duracion);
 
+                if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
+                    System.out.println(res.getInfoGeneral());
+                    solicitudesNoAtendidas++;
+                    return;
+                }
 
-               if (res.getInfoGeneral().equals("[ALERTA] No hay suficientes aulas o laboratorios para responder a la demanda")) {
-                   System.out.println(res.getInfoGeneral());
-                   solicitudesNoAtendidas++;
-                   return;
-               }
-
-                System.out.println("Aceptas la asignacion: " + res + "\n Ingresa: Si o No");
+                System.out.println("Aceptas la asignación: " + res + "\n Ingresa: Si o No");
                 System.out.print(">> ");
                 String opcion = scanner.nextLine();
 
-                if (opcion.trim().equals("Si")) {
+                if (opcion.trim().equalsIgnoreCase("Si")) {
                     clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, true);
                     solicitudesAtendidas++;
-                } else if (opcion.trim().equals("No")) {
+                } else if (opcion.trim().equalsIgnoreCase("No")) {
                     clienteFacultad.confirmarAsignacion(solicitudes.get(0), res, false);
                     solicitudesNoAtendidas++;
                 } else {
-                    System.out.println("Ingrese una opcion valida");
+                    System.out.println("Ingrese una opción válida");
                     solicitudesNoAtendidas++;
                 }
             }
@@ -88,18 +89,10 @@ public class MainFacultad {
             } else {
                 System.out.println("\nNo se registraron tiempos de respuesta.");
             }
-
         }
     }
 
     public static boolean interpreteArgumentos(String[] args, ContenedorDatos datos) {
-        // Nuevo formato de argumentos:
-        // [0] Nombre facultad
-        // [1] IP servidor
-        // [2] Puerto
-        // [3] Semestre (opcional)
-        // [4] Archivo programas (opcional)
-
         if (args.length >= 3) {
             try {
                 datos.facultad.setNombre(args[0]);
@@ -108,11 +101,9 @@ public class MainFacultad {
 
                 int semestre = args.length >= 4 ? Integer.parseInt(args[3]) : 1;
 
-                if (args.length >= 5) {
-                    RepositorioPrograma.inicializarCliente(datos, args[4], semestre);
-                } else {
-                    cargarProgramasPorDefecto(datos, semestre);
-                }
+                // Siempre cargar programas por defecto (ya no se recibe archivo)
+                cargarProgramasPorDefecto(datos, semestre);
+
                 return true;
 
             } catch (Exception e) {
@@ -121,57 +112,50 @@ public class MainFacultad {
                 return false;
             }
         } else if (args.length == 0) {
-            // Valores por defecto
             datos.facultad.setNombre("Facultad de Ingeniería");
             cargarConfiguracionServidor(datos.facultad);
             cargarProgramasPorDefecto(datos, semestrePorDefecto);
             return true;
         }
+
         mostrarAyuda();
         return false;
     }
 
-    /**
-     * Muestra las instrucciones de uso del programa
-     */
+
     private static void mostrarAyuda() {
         String ayuda = """
-        ==================================================================
-        SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
-        ==================================================================
-        
-        Modo de uso:
-        1. Sin parámetros (valores por defecto):
-           java -jar Facultad.jar
-           * Usará:
-             - Nombre facultad: 'Facultad de Ingeniería'
-             - IP servidor: localhost
-             - Puerto: 5555
-             - Semestre: 1
-             - Programas: programaDefecto.txt
-        
-        2. Con parámetros personalizados:
-           java -jar Facultad.jar <nombre> <ip> <puerto> [semestre] [archivo_programas]
-           
-           Ejemplo completo:
-           java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 2 misProgramas.txt
-        
-        3. Parámetros mínimos requeridos:
-           java -jar Facultad.jar <nombre> <ip> <puerto>
-           
-           Ejemplo:
-           java -jar Facultad.jar "Facultad de Medicina" 127.0.0.1 5556
-        
-        ==================================================================
-        ARCHIVOS DE CONFIGURACIÓN:
-        - configCliente.properties: Contiene IP/puerto por defecto
-        - programaDefecto.txt: Listado de programas con formato:
-          Nombre Programa,salones,laboratorios
-        ==================================================================
-        """;
+                ==================================================================
+                SISTEMA DE GESTIÓN DE RECURSOS PARA FACULTADES - USO DEL PROGRAMA
+                ==================================================================
+            
+                Modo de uso:
+                1. Sin parámetros (valores por defecto):
+                   java -jar Facultad.jar
+                   * Usará:
+                     - Nombre facultad: 'Facultad de Ingeniería'
+                     - IP servidor: localhost
+                     - Puerto: 5555
+                     - Semestre: 1
+                     - Programas: programaDefecto.txt
+            
+                2. Con parámetros personalizados:
+                   java -jar Facultad.jar <nombre> <ip> <puerto> [semestre]
+            
+                   Ejemplo:
+                   java -jar Facultad.jar "Facultad de Ciencias" 192.168.1.100 5555 2
+            
+                ==================================================================
+                ARCHIVOS DE CONFIGURACIÓN:
+                - configCliente.properties: Contiene IP/puerto por defecto
+                - programaDefecto.txt: Listado de programas con formato:
+                  Nombre Programa,salones,laboratorios
+                ==================================================================
+                """;
 
         System.out.println(ayuda);
     }
+
 
     private static void cargarProgramasPorDefecto(ContenedorDatos datos, int semestre) {
         try (InputStream input = MainFacultad.class.getResourceAsStream("/programasDefecto.txt")) {
@@ -192,39 +176,12 @@ public class MainFacultad {
                 5
         ));
     }
-    
-    public static boolean validarInfoServidor(String dirIP, int numeroPuerto) {
-        try {
-            // Validación de IP
-            InetAddress direccion = InetAddress.getByName(dirIP);
-            if (!(direccion instanceof Inet4Address)) {
-                System.err.println("Error: Se requiere dirección IPv4");
-                return false;
-            }
-
-            // Validación de puerto
-            if (numeroPuerto < 1 || numeroPuerto > 65535) {
-                System.err.println("Error: Puerto inválido (1-65535)");
-                return false;
-            }
-
-            return true;
-
-        } catch (UnknownHostException e) {
-            System.err.println("Error: Formato de IP inválido");
-            return false;
-        }
-    }
 
     public static void cargarConfiguracionServidor(Facultad facultad) {
-
         try (InputStream input = new FileInputStream("src/main/resources/configCliente.properties")) {
-
             Properties prop = new Properties();
-            // Cargar archivo de propiedades
             prop.load(input);
 
-            // Obtener y validar dirección IP
             String ip = prop.getProperty("server.ip", "localhost");
             try {
                 InetAddress direccion = InetAddress.getByName(ip);
@@ -234,7 +191,6 @@ public class MainFacultad {
                 facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
             }
 
-            // Obtener y validar puerto
             String puerto = prop.getProperty("server.port", "5555");
             try {
                 facultad.setPuertoServidorCentral(Integer.parseInt(puerto));
@@ -243,11 +199,19 @@ public class MainFacultad {
                 facultad.setPuertoServidorCentral(5555);
             }
 
+            String puertoProgramas = prop.getProperty("facultad.puertoProgramas", "4444");
+            try {
+                facultad.setPuertoParaProgramas(Integer.parseInt(puertoProgramas));
+            } catch (NumberFormatException e) {
+                System.err.println("Puerto para programas inválido, usando 4444");
+                facultad.setPuertoParaProgramas(4444);
+            }
+
         } catch (IOException e) {
             System.err.println("No se encontró configCliente.properties, usando valores por defecto");
-            // Valores por defecto
             facultad.setDirServidorCentral(InetAddress.getLoopbackAddress());
             facultad.setPuertoServidorCentral(5555);
+            facultad.setPuertoParaProgramas(4444);
         }
     }
 }

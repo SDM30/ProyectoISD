@@ -9,12 +9,16 @@ public class Facultad {
     private List<Programa> programas;
     private InetAddress dirServidorCentral;
     private int puertoServidorCentral;
+    private int puertoParaProgramas;
 
-    public Facultad (String nombre, List<Programa> programas, InetAddress dirServidorCentral, int puertoServidorCentral) {
+
+
+    public Facultad (String nombre, List<Programa> programas, InetAddress dirServidorCentral, int puertoServidorCentral, int puertoParaProgramas) {
         this.nombre = nombre;
         this.programas = programas;
         this.dirServidorCentral = dirServidorCentral;
         this.puertoServidorCentral = puertoServidorCentral;
+        this.puertoParaProgramas = puertoParaProgramas;
     }
 
     public Facultad () {
@@ -22,7 +26,16 @@ public class Facultad {
         this.programas = new ArrayList<Programa> ();
         this.dirServidorCentral = null;
         puertoServidorCentral = 0;
+        puertoParaProgramas = 0;
     }
+    public int getPuertoParaProgramas() {
+        return puertoParaProgramas;
+    }
+
+    public void setPuertoParaProgramas(int puertoParaProgramas) {
+        this.puertoParaProgramas = puertoParaProgramas;
+    }
+
 
     public String getNombre () {
         return nombre;
@@ -63,6 +76,7 @@ public class Facultad {
                 ", programas=" + programas +
                 ", dirServidorCentral=" + dirServidorCentral +
                 ", puertoServidorCentral=" + puertoServidorCentral +
+                ", puertoParaPrograma= "+ puertoParaProgramas +
                 '}';
     }
 
