@@ -1,6 +1,9 @@
 package org.grupo4proyecto.entidades;
 
+import java.util.UUID;
+
 public class Solicitud {
+    private String uuid = String.valueOf(java.util.UUID.randomUUID());
     private String facultad;
     private String programa;
     private int semestre;
@@ -57,10 +60,19 @@ public class Solicitud {
         this.numLaboratorios = numLaboratorios;
     }
 
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
     @Override
-    public String toString () {
+    public String toString() {
         return "Solicitud{" +
-                "facultad='" + facultad + '\'' +
+                "uuid='" + uuid + '\'' +
+                ", facultad='" + facultad + '\'' +
                 ", programa='" + programa + '\'' +
                 ", semestre=" + semestre +
                 ", numSalones=" + numSalones +
