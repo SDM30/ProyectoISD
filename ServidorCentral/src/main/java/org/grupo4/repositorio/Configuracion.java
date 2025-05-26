@@ -11,6 +11,7 @@ public class Configuracion {
         // Valores por defecto
         int maxSalones = 380;
         int maxLabs = 60;
+        int aulasMoviles = 10;
         String ip = "0.0.0.0";
         String port = "5555";
         String inproc = "backend";
@@ -38,8 +39,11 @@ public class Configuracion {
             Properties prop = new Properties();
             try (input) {
                 prop.load(input);
+
+                // Cargar propiedades en el orden especificado
                 maxSalones = Integer.parseInt(prop.getProperty("server.maxSalones", "380"));
                 maxLabs = Integer.parseInt(prop.getProperty("server.maxLabs", "60"));
+                aulasMoviles = Integer.parseInt(prop.getProperty("server.aulasMoviles", "10"));
                 ip = prop.getProperty("server.ip", "0.0.0.0");
                 port = prop.getProperty("server.port", "5555");
                 inproc = prop.getProperty("server.inproc", "backend");
@@ -52,9 +56,11 @@ public class Configuracion {
             System.err.println("Error cargando configuración. Usando valores por defecto. Detalle: " + e.getMessage());
         }
 
+        // Crear lista de valores en el orden especificado
         List<String> valores = new ArrayList<>();
         valores.add(String.valueOf(maxSalones));
         valores.add(String.valueOf(maxLabs));
+        valores.add(String.valueOf(aulasMoviles));
         valores.add(ip);
         valores.add(port);
         valores.add(inproc);

@@ -31,15 +31,16 @@ public class ServidorCentral {
         List<String> configuraciones = Configuracion.cargarConfiguracionServidor(rutaConfig);
         this.maxSalones = Integer.parseInt(configuraciones.get(0));
         this.maxLabs = Integer.parseInt(configuraciones.get(1));
+        int aulasMoviles = Integer.parseInt(configuraciones.get(9));
         this.ip = configuraciones.get(2);
         this.port = configuraciones.get(3);
         this.inproc = configuraciones.size() > 4 ? configuraciones.get(4) : "backend";
 
         // Inicializar el administrador de instalaciones
-        AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
+        AdministradorInstalaciones.getInstance(maxSalones, maxLabs, aulasMoviles);
     }
 
-    public ServidorCentral(String ip, String port, String inproc, int maxSalones, int maxLabs) {
+    public ServidorCentral(String ip, String port, String inproc, int maxSalones, int maxLabs, int aulasMoviles) {
         this.ip = ip;
         this.port = port;
         this.inproc = inproc;
@@ -47,7 +48,7 @@ public class ServidorCentral {
         this.maxLabs = maxLabs;
 
         // Inicializar el administrador de instalaciones
-        AdministradorInstalaciones.getInstance(maxSalones, maxLabs);
+        AdministradorInstalaciones.getInstance(maxSalones, maxLabs, aulasMoviles);
     }
 
     /**
@@ -158,7 +159,7 @@ public class ServidorCentral {
         if (!workerQueue.isEmpty()) {
             poller.register(frontend, Poller.POLLIN);
             //System.out.println("[BROKER] Trabajadores disponibles: " + workerQueue.size());
-            //System.out.println("[BROKER] Estado recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
+            System.out.println("[BROKER] Estado recursos: " + AdministradorInstalaciones.getInstance().getEstadisticas());
         }
 
         return poller;
