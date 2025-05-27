@@ -1,4 +1,4 @@
-package grupo4;
+package org.grupo4;
 
 import org.grupo4.redes.ManejadorHealthCheck;
 import org.grupo4.redes.ServidorCentralAsinc;
@@ -94,23 +94,27 @@ public class MainServidorCentralAsinc {
         // Inicializar contexto compartido
         ZContext context = new ZContext();
 
-        // Responder a healthcheck
-        new Thread(new ManejadorHealthCheck(context, healthcheckIp, healthcheckPort)).start();
-
-        // Atender peticiones
-        try {
-            if (ConectorCassandra.conectar(cassandraIp, cassandraPort)) {
-                System.out.println("[CASSANDRA] Conexión establecida exitosamente");
-                servidor.loadBalancingBroker(context);
-            } else {
-                System.err.println("[CASSANDRA] No se pudo establecer la conexión. El servidor no iniciará.");
+        // Esperar activación antes de iniciar el broker
+        ManejadorHealthCheck healthCheck = new ManejadorHealthCheck(context, healthcheckIp, healthcheckPort);
+        if (healthCheck.esperarActivacion()) {
+            System.out.println("Activación recibida. Iniciando broker...");
+            try {
+                if (ConectorCassandra.conectar(cassandraIp, cassandraPort)) {
+                    System.out.println("[CASSANDRA] Conexión establecida exitosamente");
+                    servidor.loadBalancingBroker(context);
+                } else {
+                    System.err.println("[CASSANDRA] No se pudo establecer la conexión. El servidor no iniciará.");
+                    context.close();
+                    return;
+                }
+            } catch (Exception e) {
+                System.err.println("[CASSANDRA] Error al conectar: " + e.getMessage());
+                System.err.println("[SERVIDOR] No se iniciará el servidor debido al error de conexión");
                 context.close();
                 return;
             }
-        } catch (Exception e) {
-            System.err.println("[CASSANDRA] Error al conectar: " + e.getMessage());
-            System.err.println("[SERVIDOR] No se iniciará el servidor debido al error de conexión");
-            context.close();
+        } else {
+            System.err.println("Error en la activación del servidor");
             return;
         }
 

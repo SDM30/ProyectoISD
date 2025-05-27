@@ -1,4 +1,4 @@
-package grupo4.entidades;
+package org.grupo4.entidades;
 
 import org.grupo4.concurrencia.ContadorAtomico;
 import org.grupo4.redes.ResultadoEnvio;

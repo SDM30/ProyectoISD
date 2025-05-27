@@ -1,4 +1,4 @@
-package grupo4.redes;
+package org.grupo4.redes;
 
 public class ConfirmacionAsignacion {
     private String encabezado;

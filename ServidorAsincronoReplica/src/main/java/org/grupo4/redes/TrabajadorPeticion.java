@@ -1,4 +1,4 @@
-package grupo4.redes;
+package org.grupo4.redes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package grupo4.entidades;
+package org.grupo4.entidades;
 /*
     garantiza que una vez creados, no cambien, esto
     previene efectos secundarios no deseados

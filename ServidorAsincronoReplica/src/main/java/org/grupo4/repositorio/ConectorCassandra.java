@@ -1,4 +1,4 @@
-package grupo4.repositorio;
+package org.grupo4.repositorio;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;

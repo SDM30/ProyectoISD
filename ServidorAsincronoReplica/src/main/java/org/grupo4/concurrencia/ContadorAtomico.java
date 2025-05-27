@@ -1,4 +1,4 @@
-package grupo4.concurrencia;
+package org.grupo4.concurrencia;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

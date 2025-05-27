@@ -1,4 +1,4 @@
-package grupo4.entidades;
+package org.grupo4.entidades;
 
 public class Solicitud {
     private String uuid;
