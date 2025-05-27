@@ -1,9 +1,9 @@
-package org.grupo4proyecto.entidades;
+package org.grupo4.entidades;
 
 import java.util.UUID;
 
 public class Solicitud {
-    private String uuid = "";
+    private String uuid = String.valueOf(java.util.UUID.randomUUID());
     private String facultad;
     private String programa;
     private int semestre;
