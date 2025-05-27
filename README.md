@@ -59,6 +59,38 @@ Este proyecto implementa un sistema de gestión de recursos académicos utilizan
 
 ---
 
+
+## Cómo ejecutar el programa cliente (Programa)
+
+### Ejecutar desde IDE
+1. Clonar el repositorio y abrir el proyecto en su IDE.
+2. Ejecutar la clase `MainPrograma.java`.
+
+### Ejecutar como JAR
+1. Compilar el proyecto y ubicar el archivo JAR generado (ej: `Programa-1.0-SNAPSHOT-jar-with-dependencies.jar`).
+2. Ejecutar con los siguientes argumentos:
+   ```bash
+   java -jar Programa.jar <ip_facultad> <puerto_facultad> <semestre> <num_salones> <num_laboratorios> <nombre_programa>
+   ```
+   **Ejemplos:**
+   - Valores por defecto:
+     ```bash
+     java -jar Programa.jar
+     ```
+   - Parámetros personalizados:
+     ```bash
+     java -jar Programa.jar 0.0.0.0 5554 1 3 7 "Ingenieria de sistemas"
+     ```
+
+**Argumentos:**
+- `ip_facultad`: Nombre identificador de la facultad.
+- `puerto_facultad`: Dirección IP del servidor central.
+- `semestre`: Número de semestre
+- `num_salones`: Número de salones
+- `num_laboratorios`: Número de laboratorios
+- `nombre_programa`: Nombre del programa
+---
+
 ## Cómo ejecutar el programa servidor central
 
 ### Ejecutar desde IDE
@@ -163,14 +195,14 @@ java -jar ServidorCentral.jar
 
 ---
 
-## Cómo ejecutar el programa PatronHealthcheck
+## Cómo ejecutar el programa PatronHealthCheck
 
 ### Ejecutar desde IDE
 1. Clonar el repositorio y abrir el proyecto en su IDE.
 2. Ejecutar la clase `PatronHealthcheck.java`.
 
 ### Ejecutar como JAR
-1. Compilar el proyecto y ubicar el archivo JAR generado (ej: `PatronHealthcheck-1.0-SNAPSHOT-jar-with-dependencies.jar`).
+1. Compilar el proyecto y ubicar el archivo JAR generado (ej: `PatronHealthCheck-1.0-SNAPSHOT-jar-with-dependencies.jar`).
 2. Ejecutar con los siguientes argumentos:
    ```bash
    java -jar PatronHealthcheck.jar <ip> <puerto> <backup_ip> <puerto_backup>
@@ -230,26 +262,26 @@ java -jar ServidorCentral.jar
 ---
 
 
-## Cómo ejecutar el programa al ServidorCentralAsincrono
+## Cómo ejecutar el programa al ServidorCentralAsinc
 
 ### Ejecutar desde IDE
 1. Clonar el repositorio y abrir el proyecto en su IDE.
 2. Ejecutar la clase `ServidorAsincronoReplica.java`.
 
 ### Ejecutar como JAR
-1. Compilar el proyecto y ubicar el archivo JAR generado (ej: `ServidorCentralAsincrono-1.0-SNAPSHOT-jar-with-dependencies.jar`).
+1. Compilar el proyecto y ubicar el archivo JAR generado (ej: `ServidorCentralAsinc-1.0-SNAPSHOT-jar-with-dependencies.jar`).
 2. Ejecutar con los siguientes argumentos:
    ```bash
-   java -jar ServidorCentralAsincrono.jar <max_salones> <max_labs> <aulas_moviles> <ip_servidor> <puerto> <ipproc> <healthcheck_ip> <healthcheck_puerto> <cassandra_ip> <cassandra_puerto>
+   java -jar ServidorCentralAsinc.jar <max_salones> <max_labs> <aulas_moviles> <ip_servidor> <puerto> <ipproc> <healthcheck_ip> <healthcheck_puerto> <cassandra_ip> <cassandra_puerto>
    ```
     **Ejemplos:**
    - Valores por defecto:
      ```bash
-     java -jar ServidorCentralAsincrono.jar
+     java -jar ServidorCentralAsinc.jar
      ```
    - Parámetros personalizados:
      ```bash
-     java -jar ServidorCentralAsincrono.jar 380 60 10 0.0.0.0 5555 backend 0.0.0.0 5554 localhost 9042
+     java -jar ServidorCentralAsinc.jar 380 60 10 0.0.0.0 5555 backend 0.0.0.0 5554 localhost 9042
      ```
 
 **Argumentos:**
