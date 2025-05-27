@@ -3,7 +3,7 @@ package org.grupo4proyecto.entidades;
 import java.util.UUID;
 
 public class Solicitud {
-    private String uuid = String.valueOf(UUID.randomUUID());
+    private String uuid = "";
     private String facultad;
     private String programa;
     private int semestre;

@@ -1,5 +1,5 @@
 ==== RESULTADO ENVIO ====
-UUID = a021ad91-2823-463c-ab52-74776fe409d4
+UUID = 952ab9e7-95be-447b-9502-c1bc3c6e8bf5
 Informacion General = Asignacion exitosa para Ingenieria de Sistemas, algunos laboratorios se asignaron como aulas moviles
 Laboratorios Asignados = 5
 Aulas Moviles Asignadas = 10
