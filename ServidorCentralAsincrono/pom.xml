@@ -35,7 +35,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.grupo4proyecto.MainServidorCentralAsinc</mainClass>
+                            <mainClass>org.grupo4.MainServidorCentralAsinc</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

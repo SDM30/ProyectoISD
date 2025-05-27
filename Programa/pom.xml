@@ -34,7 +34,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.grupo4proyecto.MainPrograma</mainClass>
+                            <mainClass>org.grupo4.MainPrograma</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

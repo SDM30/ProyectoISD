@@ -35,7 +35,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.grupo4proyecto.PatronHealthCheck</mainClass>
+                            <mainClass>org.grupo4.PatronHealthCheck</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
